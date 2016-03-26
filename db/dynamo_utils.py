@@ -10,8 +10,8 @@ import multiprocessing
 PARALLEL_PROCS = 10
 
 # set up connection to simpleDB
-aws_access_key_id = "AKIAIR6PPMENHJVJHGFQ"
-aws_secret_access_key = "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"
+aws_access_key_id = ""
+aws_secret_access_key = ""
 
 conn = boto.dynamodb2.connect_to_region('us-west-1',
                                         aws_access_key_id=aws_access_key_id,
