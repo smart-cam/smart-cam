@@ -6,12 +6,15 @@ from random import randint
 import pprint
 import time
 import multiprocessing
+from config import Config
+
 
 PARALLEL_PROCS = 10
 
 # set up connection to simpleDB
-aws_access_key_id = ""
-aws_secret_access_key = ""
+config = Config()
+aws_access_key_id = config.get("aws", "access_key_id")
+aws_secret_access_key = config.get("aws", "secret_access_key")
 
 conn = boto.dynamodb2.connect_to_region('us-west-1',
                                         aws_access_key_id=aws_access_key_id,
@@ -86,6 +89,7 @@ if __name__ == "__main__":
     # Delete existing items
     rows = fetch_items()
     delete_item(rows)
+    time.sleep(10)
 
     # Create items
     create_items()
