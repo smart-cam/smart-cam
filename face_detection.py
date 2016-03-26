@@ -7,6 +7,7 @@ import sys
 import pprint
 import datetime
 import argparse
+import glob
 
 OPENCV_HOME = "/Users/ssatpati/anaconda/pkgs/opencv3-3.1.0-py27_0/share/OpenCV/haarcascades/"
 
@@ -25,12 +26,10 @@ TOTAL_ESTIMATED_UNIQ_FACES = 0
 
 def detect_faces(frame_id, frame):
     """Detect Faces"""
-    global TOTAL_FACES_DETECTED
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces_rects = face_cascade.detectMultiScale(gray, 1.3, 5)
 
-    TOTAL_FACES_DETECTED += np.shape(faces_rects)[0]
     print "\n### [{0}] Faces Detected: {1}\n{2}\n".format(frame_id, np.shape(faces_rects)[0], faces_rects)
 
     for (x, y, w, h) in faces_rects:
@@ -93,16 +92,36 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Cancel SoftLayer cluster')
     parser.add_argument('-v', dest='video_file', action='store', help='Path to the Video File', default=VIDEO_FILE)
 
+    # Face Recognition
+    parser.add_argument('-r', dest='face_recognition', action='store', help='Try to Recognize the Faces?', default=False)
+    parser.add_argument('-f', dest='faces_dir', action='store', help='Path to the Dir where known Faces are stored')
+
     args = parser.parse_args()
     print "Arguments: ", args
 
+    if args.face_recognition and not args.faces_dir:
+        print 'Path to Faces Dir needs to be provided, if Face Recognition is turned on. Aborting!!!'
+        sys.exit(1)
 
+    '''
+    faces_rects_known = []
+    if args.face_recognition:
+        for f in glob.glob(args.faces_dir + '/*'):
+            print '# Getting Face ROI from Known Face File: {0}'.format(f)
+            faces_rects = detect_faces(0, cv2.imread(f))
+            faces_rects_known.extend(faces_rects)
+        print faces_rects_known
+        sys.exit(1)
+    '''
+
+    # Handle to Video
     cap = cv2.VideoCapture(args.video_file)
 
     # Hists from Prev Frames
     faces_roi_hists_prev = []
 
     frame_id = 0
+    # For each Frame
     while cap.isOpened():
         try:
             ret, frame = cap.read()
@@ -110,6 +129,9 @@ if __name__ == '__main__':
 
             # Get the Face ROI from Viola Jones
             faces_rects = detect_faces(frame_id, frame)
+
+            # Increment Total Face Count
+            TOTAL_FACES_DETECTED += np.shape(faces_rects)[0]
 
             # If Faces Detected
             if np.shape(faces_rects)[0] > 0:
