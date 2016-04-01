@@ -20,9 +20,6 @@ SKIP = 2
 #Path to Default Video File
 VIDEO_FILE = './resources/video.avi'
 
-TOTAL_FACES_DETECTED = 0
-TOTAL_ESTIMATED_UNIQ_FACES = 0
-
 
 def detect_faces(frame_id, frame):
     """Detect Faces"""
@@ -82,28 +79,58 @@ def get_roi_hist(faces_rects):
     return faces_roi_hists
 
 
+def get_range(l, increment=20):
+    # Default
+    beg = 0
+    end = 0
+    while end < l:
+        beg = end
+        if beg + increment < l:
+            end = beg + increment
+        else:
+            end = l
+        yield (beg, end)
+
+
+def generate_report(faces, time_taken):
+    report = {}
+
+    report['face_count'] = sum([i[1] for i in faces])
+    report['face_count_uniq'] = sum([i[2] for i in faces])
+    report['frame_count'] = frame_id
+    report['time_taken'] = time_taken
+
+    report['details'] = []
+    for beg, end in get_range(len(faces)):
+        d = {}
+        d['beg'] = beg
+        d['end'] = end
+        d['face_count'] = sum([i[1] for i in faces[beg:end]])
+        d['face_count_uniq'] = sum([i[2] for i in faces[beg:end]])
+        report['details'].append(d)
+
+    return json.dumps(report)
+
 if __name__ == '__main__':
     '''Main Point of Entry to Program'''
     start = datetime.datetime.now()
 
-    global TOTAL_FACES_DETECTED
-    global TOTAL_ESTIMATED_UNIQ_FACES
-
     parser = argparse.ArgumentParser(description='Cancel SoftLayer cluster')
     parser.add_argument('-v', dest='video_file', action='store', help='Path to the Video File', default=VIDEO_FILE)
+    parser.add_argument('-s', dest='show_frame', action='store', help='Show Frame', default=False)
 
     # Face Recognition
-    parser.add_argument('-r', dest='face_recognition', action='store', help='Try to Recognize the Faces?', default=False)
-    parser.add_argument('-f', dest='faces_dir', action='store', help='Path to the Dir where known Faces are stored')
+    #parser.add_argument('-r', dest='face_recognition', action='store', help='Try to Recognize the Faces?', default=False)
+    #parser.add_argument('-f', dest='faces_dir', action='store', help='Path to the Dir where known Faces are stored')
 
     args = parser.parse_args()
     print "Arguments: ", args
 
+    '''
     if args.face_recognition and not args.faces_dir:
         print 'Path to Faces Dir needs to be provided, if Face Recognition is turned on. Aborting!!!'
         sys.exit(1)
 
-    '''
     faces_rects_known = []
     if args.face_recognition:
         for f in glob.glob(args.faces_dir + '/*'):
@@ -113,6 +140,8 @@ if __name__ == '__main__':
         print faces_rects_known
         sys.exit(1)
     '''
+    faces = []
+    total_est_uniq_faces = 0
 
     # Handle to Video
     cap = cv2.VideoCapture(args.video_file)
@@ -125,13 +154,17 @@ if __name__ == '__main__':
     while cap.isOpened():
         try:
             ret, frame = cap.read()
+
+            if not ret:
+                break
+
             frame_id += 1
 
             # Get the Face ROI from Viola Jones
             faces_rects = detect_faces(frame_id, frame)
 
             # Increment Total Face Count
-            TOTAL_FACES_DETECTED += np.shape(faces_rects)[0]
+            face_count = np.shape(faces_rects)[0]
 
             # If Faces Detected
             if np.shape(faces_rects)[0] > 0:
@@ -139,18 +172,25 @@ if __name__ == '__main__':
                 faces_roi_hists = get_roi_hist(faces_rects)
 
                 # Detect Similar Faces
-                TOTAL_ESTIMATED_UNIQ_FACES += get_uniq_faces_curr_frame(frame_id, faces_roi_hists_prev, faces_roi_hists)
+                face_count_uniq = get_uniq_faces_curr_frame(frame_id, faces_roi_hists_prev, faces_roi_hists)
+                total_est_uniq_faces += face_count_uniq
 
                 # Set Previous
                 faces_roi_hists_prev = faces_roi_hists
+            else:
+                face_count_uniq = 0
 
             # Show the Frame
-            cv2.imshow('frame', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            if args.show_frame:
+                cv2.imshow('frame', frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+
+            # Add the individual counts to list
+            faces.append((frame_id,face_count,face_count_uniq))
 
             # Count
-            print "\n### [{0}] Total Estimated Unique Faces so far: {1}".format(frame_id, TOTAL_ESTIMATED_UNIQ_FACES)
+            print "\n### [{0}] Total Estimated Unique Faces so far: {1}".format(frame_id, total_est_uniq_faces)
 
             # For Debugging Purposes
             #if frame_id > 300:
@@ -162,14 +202,6 @@ if __name__ == '__main__':
     cap.release()
     cv2.destroyAllWindows()
 
-    #Create Json
-    report = {}
-    report['video_file'] = args.video_file
-    report['total_faces_detected'] = TOTAL_FACES_DETECTED
-    report['total_estimated_unique_faces'] = TOTAL_ESTIMATED_UNIQ_FACES
-    report['time_taken'] = str(datetime.datetime.now() - start)
-
-
     print "\n################### REPORT ###################\n"
-    pprint.pprint(json.dumps(report))
+    pprint.pprint(generate_report(faces, str(datetime.datetime.now() - start)))
     print "\n################### ###### ###################\n"
