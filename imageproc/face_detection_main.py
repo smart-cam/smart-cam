@@ -27,8 +27,13 @@ def process_item(row):
                                                              row['S3_BUCKET'],
                                                              row['S3_KEY'])
 
-    if misc.download_from_s3(row['S3_BUCKET'], row['S3_KEY'], OUTPUT_DIR):
+    ret_status, local_file = misc.download_from_s3(row['S3_BUCKET'], row['S3_KEY'], OUTPUT_DIR)
+    if ret_status:
         print 'SUCCESS'
+        report = fd.process(local_file)
+        pprint.pprint(report)
+    else:
+        print 'FAILED: <{0}> <{1}> <${2}>'.format(row['CUSTID_PIEID'], row['S3_BUCKET'], row['S3_KEY'])
 
 if __name__ == '__main__':
     '''Main Entry Point to the Program'''
@@ -47,8 +52,6 @@ if __name__ == '__main__':
 
     while True:
         db.display_items()
-        time.sleep(2)
-
         rows = db.get_unprocessed_items()
 
         # Process Items
@@ -76,7 +79,7 @@ if __name__ == '__main__':
                 del jobs[:]  # Re-Init
 
         print '# Processing Done for this Batch, sleeping for 5 secs'
-        time.sleep(5)
+        time.sleep(10)
 
 
     #report = fd.process(VIDEO_FILE)
