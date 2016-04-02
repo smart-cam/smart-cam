@@ -78,7 +78,7 @@ class FaceDetection(object):
         return faces_roi_hists
 
 
-    def __get_range(self, l, increment=20):
+    def __get_range(self, l, increment=10):
         # Default
         beg = 0
         end = 0

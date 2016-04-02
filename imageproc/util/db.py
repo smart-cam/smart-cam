@@ -16,11 +16,11 @@ class DynamoDBUtils(object):
 
     # <TEST ONLY> Mapping of Customer & Pie/Cam
     cust_pie_dict = {
-        "cid1" : ["cam1","cam1"],
+        "cid1" : ["cam1","cam2"],
         "cid2" : ["cam1","cam2"]
     }
 
-    cols = ['CREATE_TIME','LEN','PROCESSED','S3_BUCKET','S3_KEY','VERSION']
+    cols = ['START_TIME','LEN','PROCESSED','S3_BUCKET','S3_KEY','VERSION']
 
     def __init__(self):
         cfg = Config()
@@ -41,13 +41,14 @@ class DynamoDBUtils(object):
                 for i in xrange(2):
                     cnt += 1
                     self.__create_item(cust, cam, cnt)
+                    time.sleep(10)
 
     # <TEST ONLY> Creates one item in table
     def __create_item(self, c_id, cam_id, num):
         data = dict()
 
         data['CUSTID_PIEID'] = c_id + '_' + cam_id
-        data['CREATE_TIME'] = time.time()
+        data['START_TIME'] = time.time()
         data['S3_BUCKET'] = 'w210-smartcam'
         data['S3_KEY'] = 'videos/video_{0}.avi'.format(num)
         data['PROCESSED'] = 0
@@ -58,18 +59,18 @@ class DynamoDBUtils(object):
         self.sc.put_item(data)
 
     # Creates one item in table
-    def create_item(self, c_id, cam_id, s3_bucket, s3_key):
+    def create_item(self, c_id, cam_id, s3_bucket, s3_key, s_time):
         data = dict()
 
         data['CUSTID_PIEID'] = c_id + '_' + cam_id
-        data['CREATE_TIME'] = time.time()
+        data['START_TIME'] = s_time
         data['S3_BUCKET'] = s3_bucket
         data['S3_KEY'] = s3_key
         data['PROCESSED'] = 0
         data['VERSION'] = 0
         data['LEN'] = randint(5, 60)
 
-        print "# Uploading Data for {0},{1}: {2}".format(c_id,cam_id,s3_url)
+        print "# Uploading Data for {0}_{1}: {2}:{3}".format(c_id,cam_id,s3_bucket,s3_key)
         self.sc.put_item(data)
 
     # Fetch items
@@ -77,7 +78,7 @@ class DynamoDBUtils(object):
         rows = self.sc.query_2(index='PROCESSED-index',PROCESSED__eq=0)
         cnt = 0
         for row in rows:
-            print row['CUSTID_PIEID'],row['TIMESTAMP'],row['PROCESSED']
+            print row['CUSTID_PIEID'],row['START_TIME'],row['PROCESSED']
             cnt += 1
         print '# Total unprocessed items: {0}'.format(cnt)
         return rows
@@ -95,10 +96,13 @@ class DynamoDBUtils(object):
     def get_items_by_id(self, id):
         return self.sc.query_2(CUSTID_PIEID__eq=id)
 
+    def get_items_by_id_range(self, id, start, end):
+        return self.sc.query_2(CUSTID_PIEID__eq=id, START_TIME__between=(start, end))
+
     # Process Item
     def process_item(self,row):
         '''Face Counting needs to be integrated here'''
-        print 'Processing: ', row['CUSTID_PIEID'],row['CREATE_TIME'],row['PROCESSED']
+        print 'Processing: ', row['CUSTID_PIEID'],row['START_TIME'],row['PROCESSED']
 
         try:
             #Create Dict - Assumption: 30 secs video / 20fps
@@ -134,7 +138,7 @@ class DynamoDBUtils(object):
             row.save(overwrite=True)
         except Exception as e:
             print e
-            print '[FAILED] Processing: ', row['CUSTID_PIEID'],row['CREATE_TIME'],row['PROCESSED']
+            print '[FAILED] Processing: ', row['CUSTID_PIEID'],row['START_TIME'],row['PROCESSED']
 
 
     def stats(self,lst):
@@ -150,7 +154,10 @@ class DynamoDBUtils(object):
 if __name__ == "__main__":
     db = DynamoDBUtils()
     db.display_items()
-    print '###'
+    print '### Query By ID: '
     for row in db.get_items_by_id('cid1_cam1'):
         print row['CUSTID_PIEID']
+    print '### Query By Range Key: '
+    for row in db.get_items_by_id_range('cid1_cam1', 1459621230, 1459621270):
+        print row['CUSTID_PIEID'],row['START_TIME']
     db.close()
