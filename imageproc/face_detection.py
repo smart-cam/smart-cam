@@ -3,6 +3,7 @@ __author__ = 'ssatpati'
 import json
 import datetime
 import cv2
+import pprint
 import numpy as np
 
 from util.config import Config
@@ -178,3 +179,9 @@ class FaceDetection(object):
         report = self.__generate_report(faces, str(datetime.datetime.now() - start))
 
         return report
+
+
+if __name__ == '__main__':
+    fd = FaceDetection()
+    report = fd.process('/Users/ssatpati/0-DATASCIENCE/DEV/github/W210_capstone/videos/video_1.avi')
+    pprint.pprint(report)

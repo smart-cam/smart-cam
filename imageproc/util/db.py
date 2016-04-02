@@ -20,6 +20,8 @@ class DynamoDBUtils(object):
         "cid2" : ["cam1","cam2"]
     }
 
+    cols = ['CREATE_TIME','LEN','PROCESSED','S3_BUCKET','S3_KEY','VERSION']
+
     def __init__(self):
         cfg = Config()
         aws_access_key_id = cfg.get("aws", "access_key_id")
@@ -90,6 +92,8 @@ class DynamoDBUtils(object):
     def get_unprocessed_items(self):
         return self.sc.query_2(index='PROCESSED-index',PROCESSED__eq=0)
 
+    def get_items_by_id(self, id):
+        return self.sc.query_2(CUSTID_PIEID__eq=id)
 
     # Process Item
     def process_item(self,row):
@@ -139,45 +143,14 @@ class DynamoDBUtils(object):
             return sorted(lst)[quotient]
         return sum(lst) / len(lst), sum(sorted(lst)[quotient - 1:quotient + 1]) / 2
 
+    def close(self):
+        self.conn.close()
+
 # repeatedly upload items to simpleDB until program is forced to exit
 if __name__ == "__main__":
-
-    # Delete existing items
-    purge_table()
-    #exit(1)
-    time.sleep(5)
-
-    # Create items
-    create_items()
-    time.sleep(5)
-
-    while(True):
-        display_items()
-        rows = get_unprocessed_items()
-
-        # Process Items
-        if rows != None:
-            jobs = []
-            cnt = 0
-            for row in rows:
-                cnt += 1
-                p = multiprocessing.Process(target=process_item, args=(row,))
-                jobs.append(p)
-                # Start processes
-                if cnt % PARALLEL_PROCS == 0:
-                    for job in jobs:
-                        job.start()
-                    for job in jobs:
-                        job.join()
-                    del jobs[:]  # Re-Init
-
-            if len(jobs) > 0:
-                # Remaining Records
-                for job in jobs:
-                    job.start()
-                for job in jobs:
-                    job.join()
-                del jobs[:]  # Re-Init
-
-        print '# No unprocessed record found in DB, sleeping for 5 secs'
-        time.sleep(5)
+    db = DynamoDBUtils()
+    db.display_items()
+    print '###'
+    for row in db.get_items_by_id('cid1_cam1'):
+        print row['CUSTID_PIEID']
+    db.close()
