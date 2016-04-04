@@ -99,14 +99,15 @@ class FaceDetection(object):
         report['frame_count'] = len(faces)
         report['time_taken'] = time_taken
 
-        report['details'] = []
+        face_count_dtl = []
+        face_count_uniq_dtl = []
+
         for beg, end in self.__get_range(len(faces)):
-            d = {}
-            d['beg'] = beg
-            d['end'] = end
-            d['face_count'] = sum([i[1] for i in faces[beg:end]])
-            d['face_count_uniq'] = sum([i[2] for i in faces[beg:end]])
-            report['details'].append(d)
+            face_count_dtl.append(sum([i[1] for i in faces[beg:end]]))
+            face_count_uniq_dtl.append(sum([i[2] for i in faces[beg:end]]))
+
+        report['face_count_dtl'] = face_count_dtl
+        report['face_count_uniq_dtl'] = face_count_uniq_dtl
 
         return json.dumps(report)
 
@@ -183,5 +184,6 @@ class FaceDetection(object):
 
 if __name__ == '__main__':
     fd = FaceDetection()
-    report = fd.process('/Users/ssatpati/0-DATASCIENCE/DEV/github/W210_capstone/videos/video_1.avi')
+    #report = fd.process('/Users/ssatpati/0-DATASCIENCE/DEV/github/smart-cam/resources/video.avi')
+    report = fd.process('/Users/ssatpati/0-DATASCIENCE/DEV/github/smart-cam/videos/video_3.avi')
     pprint.pprint(report)

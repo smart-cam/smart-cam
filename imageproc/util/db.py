@@ -20,7 +20,11 @@ class DynamoDBUtils(object):
         "cid2" : ["cam1","cam2"]
     }
 
+    rasp_names = ["kitchen", "garage"]
+
     cols = ['START_TIME','LEN','PROCESSED','S3_BUCKET','S3_KEY','VERSION']
+
+    S3_BUCKET = 'smart-cam'
 
     def __init__(self):
         cfg = Config()
@@ -34,6 +38,7 @@ class DynamoDBUtils(object):
         pprint.pprint(self.conn.describe_table('SMARTCAM'))
 
     # <TEST ONLY> Creates Sample Records: 10 records per cust/cam
+    '''
     def create_items(self):
         cnt = 0
         for cust,cams in DynamoDBUtils.cust_pie_dict.iteritems():
@@ -43,11 +48,12 @@ class DynamoDBUtils(object):
                     self.__create_item(cust, cam, cnt)
                     time.sleep(10)
 
+
     # <TEST ONLY> Creates one item in table
     def __create_item(self, c_id, cam_id, num):
         data = dict()
 
-        data['CUSTID_PIEID'] = c_id + '_' + cam_id
+        data['RASP_NAME'] = c_id + '_' + cam_id
         data['START_TIME'] = time.time()
         data['S3_BUCKET'] = 'w210-smartcam'
         data['S3_KEY'] = 'videos/video_{0}.avi'.format(num)
@@ -57,12 +63,34 @@ class DynamoDBUtils(object):
 
         print "# Uploading Data for {0},{1}: {2}".format(c_id,cam_id,num)
         self.sc.put_item(data)
+    '''
+    def create_items(self):
+        cnt = 0
+        for rasp_name in DynamoDBUtils.rasp_names:
+            for i in xrange(2):
+                cnt += 1
+                self.__create_item(rasp_name, cnt)
+                time.sleep(10)
 
-    # Creates one item in table
-    def create_item(self, c_id, cam_id, s3_bucket, s3_key, s_time):
+    # <TEST ONLY> Creates one item in table
+    def __create_item(self, rasp_name, num):
         data = dict()
 
-        data['CUSTID_PIEID'] = c_id + '_' + cam_id
+        data['RASP_NAME'] = rasp_name
+        data['START_TIME'] = time.time()
+        data['S3_BUCKET'] = DynamoDBUtils.S3_BUCKET
+        data['S3_KEY'] = 'videos/video_{0}.avi'.format(num)
+        data['PROCESSED'] = 0
+        data['VERSION'] = 0
+
+        print "# Uploading Data for {0}: {1}".format(rasp_name, num)
+        self.sc.put_item(data)
+
+    # Creates one item in table
+    def create_item(self, rasp_name, s3_bucket, s3_key, s_time):
+        data = dict()
+
+        data['RASP_NAME'] = rasp_name
         data['START_TIME'] = s_time
         data['S3_BUCKET'] = s3_bucket
         data['S3_KEY'] = s3_key
@@ -70,7 +98,7 @@ class DynamoDBUtils(object):
         data['VERSION'] = 0
         data['LEN'] = randint(5, 60)
 
-        print "# Uploading Data for {0}_{1}: {2}:{3}".format(c_id,cam_id,s3_bucket,s3_key)
+        print "# Uploading Data for {0}: {1}:{2}".format(rasp_name, s3_bucket, s3_key)
         self.sc.put_item(data)
 
     # Fetch items
@@ -78,7 +106,7 @@ class DynamoDBUtils(object):
         rows = self.sc.query_2(index='PROCESSED-index',PROCESSED__eq=0)
         cnt = 0
         for row in rows:
-            print row['CUSTID_PIEID'],row['START_TIME'],row['PROCESSED']
+            print row['RASP_NAME'],row['START_TIME'],row['PROCESSED']
             cnt += 1
         print '# Total unprocessed items: {0}'.format(cnt)
         return rows
@@ -102,7 +130,7 @@ class DynamoDBUtils(object):
     # Process Item
     def process_item(self,row):
         '''Face Counting needs to be integrated here'''
-        print 'Processing: ', row['CUSTID_PIEID'],row['START_TIME'],row['PROCESSED']
+        print 'Processing: ', row['RASP_NAME'],row['START_TIME'],row['PROCESSED']
 
         try:
             #Create Dict - Assumption: 30 secs video / 20fps
@@ -138,7 +166,7 @@ class DynamoDBUtils(object):
             row.save(overwrite=True)
         except Exception as e:
             print e
-            print '[FAILED] Processing: ', row['CUSTID_PIEID'],row['START_TIME'],row['PROCESSED']
+            print '[FAILED] Processing: ', row['RASP_NAME'],row['START_TIME'],row['PROCESSED']
 
 
     def stats(self,lst):
@@ -155,9 +183,9 @@ if __name__ == "__main__":
     db = DynamoDBUtils()
     db.display_items()
     print '### Query By ID: '
-    for row in db.get_items_by_id('cid1_cam1'):
-        print row['CUSTID_PIEID']
+    for row in db.get_items_by_id('kitchen'):
+        print row['RASP_NAME']
     print '### Query By Range Key: '
     for row in db.get_items_by_id_range('cid1_cam1', 1459621230, 1459621270):
-        print row['CUSTID_PIEID'],row['START_TIME']
+        print row['RASP_NAME'],row['START_TIME']
     db.close()

@@ -38,4 +38,6 @@ def get_range(l, increment=20):
 for beg, end in get_range(len(faces)):
    print sum([i[1] for i in faces[beg:end]]), sum([i[2] for i in faces[beg:end]])
 
+for i in xrange(1,7):
+    print i
 

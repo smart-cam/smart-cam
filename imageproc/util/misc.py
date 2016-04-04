@@ -1,16 +1,39 @@
 __author__ = 'ssatpati'
 import boto
+from boto.s3.key import Key
 from config import Config
 import os
 
+
+def upload_to_s3(bucket_name, key_name, video_file):
+    cfg = Config()
+    # connect to the bucket
+    conn = boto.connect_s3(cfg.get("aws", "access_key_id"),
+                            cfg.get("aws", "secret_access_key"))
+
+    ret_val = False
+
+    try:
+        print("# S3: Uploading to Bucket: {0} / Video|Key: {1}".format(bucket_name, video_file))
+        bucket = conn.get_bucket(bucket_name)
+        k = Key(bucket)
+        if key_name:
+            k.key = key_name
+        else:
+            k.key = os.path.basename(video_file)
+        k.set_contents_from_filename(video_file)
+        ret_val = True
+    except boto.exception.S3ResponseError as err:
+        print(err)
+
+    return ret_val
+
+
 def download_from_s3(bucket_name, key_name, local_out_dir='~/tmp'):
     cfg = Config()
-    aws_access_key_id = cfg.get("aws", "access_key_id")
-    aws_secret_access_key = cfg.get("aws", "secret_access_key")
-
     # connect to the bucket
-    conn = boto.connect_s3(aws_access_key_id,
-                    aws_secret_access_key)
+    conn = boto.connect_s3(cfg.get("aws", "access_key_id"),
+                            cfg.get("aws", "secret_access_key"))
 
     ret_val = (False, None)
 
@@ -31,6 +54,49 @@ def download_from_s3(bucket_name, key_name, local_out_dir='~/tmp'):
     return ret_val
 
 
+def create_bucket(bucket_name):
+    '''Create Bucket: CAUTION ### It deletes the bucket'''
+    cfg = Config()
+    # connect to the bucket
+    conn = boto.connect_s3(cfg.get("aws", "access_key_id"),
+                            cfg.get("aws", "secret_access_key"))
+
+    ret_val = False
+
+    try:
+        print("# S3: Deleting/Creating Bucket: {0}".format(bucket_name))
+        bucket = conn.get_bucket(bucket_name)
+        # Delete Files
+        print("Deleting Files in S3 Bucket - {0}".format(bucket_name))
+        for key in bucket.list():
+            key.delete()
+        print("Deleting S3 Bucket - {0}".format(bucket_name))
+        # Delete Bucket
+        conn.delete_bucket(bucket_name)
+    except boto.exception.S3ResponseError as err:
+        print(err)
+
+    try:
+        bucket = conn.create_bucket(bucket_name)
+        ret_val = True
+    except boto.exception.S3ResponseError as err:
+        print(err)
+
+    return ret_val
+
+
 if __name__ == '__main__':
-    print download_from_s3('w210-smartcam', 'videos/video_20.avi', '.')
-    print download_from_s3('w210-smartcam', 'videos/video_6.avi', '.')
+    BUCKET_NAME = 'smart-cam'
+    N = 6
+
+    '''
+    print create_bucket(BUCKET_NAME)
+
+    for i in xrange(1, N+1):
+        print upload_to_s3(BUCKET_NAME,
+                           'videos/video_{0}.avi'.format(i),
+                           '/Users/ssatpati/0-DATASCIENCE/DEV/github/smart-cam/resources/video.avi')
+    '''
+
+
+    print download_from_s3(BUCKET_NAME, 'videos/video_1.avi', '.')
