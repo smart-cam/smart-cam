@@ -9,7 +9,10 @@ import os
 if __name__ == '__main__':
     BUCKET_NAME = 'smart-cam'
 
-    os.remove('../videos/video_1.avi')
+    try:
+        os.remove('../videos/video_1.avi')
+    except Exception as e:
+        print e
 
     ret, local_file = misc.download_from_s3(BUCKET_NAME, 'videos/video_1.avi', '../videos')
 
