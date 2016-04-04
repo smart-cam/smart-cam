@@ -44,7 +44,7 @@ def update_record(row, report):
     d= {}
     data = []
     for i in xrange(len(report['face_count_dtl'])):
-        data.append(random.random())
+        data.append(round(random.random(),1))
     d['data'] = data
     row['FOREGROUND'] = d
 
