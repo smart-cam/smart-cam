@@ -78,7 +78,7 @@ if __name__ == '__main__':
                     job.join()
                 del jobs[:]  # Re-Init
 
-        print '# Processing Done for this Batch, sleeping for 5 secs'
+        print '# Processing Done for this Batch, sleeping for 10 secs'
         time.sleep(10)
 
 
