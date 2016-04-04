@@ -8,6 +8,8 @@ import time
 import shutil
 import os
 
+import random
+
 #Path to Default Video File
 VIDEO_FILE = '../resources/video.avi'
 
@@ -17,6 +19,38 @@ OUTPUT_DIR = '../videos'
 # Create all Classes
 db = DynamoDBUtils()
 fd = FaceDetection()
+
+
+def update_record(row, report):
+    # Metadata
+    row['UPDATE_TIME'] = time.time()
+    row['VERSION'] += 1
+    row['PROCESSED'] = 1
+
+    # Face Counts / Summary
+    row['FRAME_COUNT'] = report['frame_count']
+    row['FACE_COUNT'] = report['face_count']
+    row['FACE_COUNT_UNIQ'] = report['face_count_uniq']
+
+    # Face Counts / Detail
+    d = {}
+    d['data'] = report['face_count_dtl']
+    row['FACE_COUNT_DTL'] = d
+    d= {}
+    d['data'] = report['face_count_uniq_dtl']
+    row['FACE_COUN_UNIQ_DTL'] = d
+
+    # Test Code Only
+    d= {}
+    data = []
+    for i in xrange(len(report['face_count_dtl'])):
+        data.append(random.random())
+    d['data'] = data
+    row['FOREGROUND'] = d
+
+    # Update
+    db.update(row)
+
 
 def process_item(row):
     '''Face Counting needs to be integrated here'''
@@ -32,6 +66,8 @@ def process_item(row):
         time.sleep(10)
         report = fd.process(local_file)
         pprint.pprint(report)
+        # Update Fields
+        update_record(row, report)
     else:
        print '[{0}][{1}] FAILED Downloading File: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY'])
 

@@ -109,7 +109,7 @@ class FaceDetection(object):
         report['face_count_dtl'] = face_count_dtl
         report['face_count_uniq_dtl'] = face_count_uniq_dtl
 
-        return json.dumps(report)
+        return report
 
     def process(self, video_file,show_frame=False):
         '''Main Point of Entry to Program'''

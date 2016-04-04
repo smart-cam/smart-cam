@@ -127,47 +127,12 @@ class DynamoDBUtils(object):
     def get_items_by_id_range(self, id, start, end):
         return self.sc.query_2(CUSTID_PIEID__eq=id, START_TIME__between=(start, end))
 
-    # Process Item
-    def process_item(self,row):
-        '''Face Counting needs to be integrated here'''
-        print 'Processing: ', row['RASP_NAME'],row['START_TIME'],row['PROCESSED']
-
+    def update(self, row):
         try:
-            #Create Dict - Assumption: 30 secs video / 20fps
-            d = {}
-            fc_t = []
-            fc_u = []
-            for i in xrange(30):
-                d[i] = {}
-                fc = randint(1, 50)
-                fc_t.append(fc)
-                d[i]['fc_t'] = fc
-                fc = randint(1, 25)
-                fc_u.append(fc)
-                d[i]['fc_u'] = fc
-
-            row['UPDATE_TIME'] = time.time()
-            row['VERSION'] += 1
-            row['PROCESSED'] = 1
-            row['FACES'] = json.dumps(d)
-            #print json.dumps(d)
-
-            # Aggregated Counts per file
-            fc_t_mean, fc_t_median = stats(fc_t)
-            fc_u_mean, fc_u_median = stats(fc_u)
-
-            row['FACE_COUNT_TOT_MEAN'] = fc_t_mean
-            row['FACE_COUNT_TOT_MEDIAN'] = fc_t_median
-
-            row['FACE_COUNT_UNIQ_MEAN'] = fc_u_mean
-            row['FACE_COUNT_UNIQ_MEDIAN'] = fc_u_median
-
-            #row.partial_save()
             row.save(overwrite=True)
         except Exception as e:
             print e
             print '[FAILED] Processing: ', row['RASP_NAME'],row['START_TIME'],row['PROCESSED']
-
 
     def stats(self,lst):
         quotient, remainder = divmod(len(lst), 2)

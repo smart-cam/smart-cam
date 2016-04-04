@@ -2,6 +2,7 @@ __author__ = 'ssatpati'
 from face_detection import FaceDetection
 from util.db import DynamoDBUtils
 from util import misc
+import random
 import shutil
 import pprint
 import os
@@ -22,3 +23,11 @@ if __name__ == '__main__':
     fd = FaceDetection()
     report = fd.process(local_file)
     pprint.pprint(report)
+    d = {}
+    d['data'] = report['face_count_dtl']
+    #pprint.pprint(d)
+    d= {}
+    d['data'] = report['face_count_uniq_dtl']
+    #pprint.pprint(d)
+    for i in xrange(len(report['face_count_dtl'])):
+        print i, round(random.uniform(0, 1.0), 10)
