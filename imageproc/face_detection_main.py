@@ -54,22 +54,30 @@ def update_record(row, report):
 
 def process_item(row):
     '''Face Counting needs to be integrated here'''
-    print 'Processing: <{0}> <{1}> <{2}> <{3}> <{4}>'.format(row['RASP_NAME'],
-                                                             row['START_TIME'],
-                                                             row['PROCESSED'],
-                                                             row['S3_BUCKET'],
-                                                             row['S3_KEY'])
+    try:
+        print 'Processing: <{0}> <{1}> <{2}> <{3}> <{4}>'.format(row['RASP_NAME'],
+                                                                 row['START_TIME'],
+                                                                 row['PROCESSED'],
+                                                                 row['S3_BUCKET'],
+                                                                 row['S3_KEY'])
+        # Download File from S3
+        ret_status, local_file = misc.download_from_s3(row['S3_BUCKET'], row['S3_KEY'], OUTPUT_DIR)
+        if ret_status:
+            print '[{0}][{1}] Video File: {2}'.format(row['RASP_NAME'],row['START_TIME'],local_file)
+            #time.sleep(10)
 
-    ret_status, local_file = misc.download_from_s3(row['S3_BUCKET'], row['S3_KEY'], OUTPUT_DIR)
-    if ret_status:
-        print '[{0}][{1}] Video File: {2}'.format(row['RASP_NAME'],row['START_TIME'],local_file)
-        time.sleep(10)
-        report = fd.process(local_file)
-        pprint.pprint(report)
-        # Update Fields
-        update_record(row, report)
-    else:
-       print '[{0}][{1}] FAILED Downloading File: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY'])
+            # Run Face Count
+            report = fd.process(local_file)
+            pprint.pprint(report)
+
+            # Update Fields in DB
+            update_record(row, report)
+        else:
+            print '[{0}][{1}] FAILED Downloading File: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY'])
+    except Exception as e:
+        print e
+        print '[{0}][{1}] FAILED Processing Video: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY'])
+
 
 if __name__ == '__main__':
     '''Main Entry Point to the Program'''
