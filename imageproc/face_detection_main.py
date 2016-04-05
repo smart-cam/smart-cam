@@ -41,12 +41,17 @@ def update_record(row, report):
     row['FACE_COUN_UNIQ_DTL'] = d
 
     # Test Code Only
+    '''
     d= {}
     data = []
     for i in xrange(len(report['face_count_dtl'])):
-        data.append(round(random.random(),1))
+        if i % 2 == 0:
+            data.append('0.01')
+        else:
+            data.append('0.02')
     d['data'] = data
     row['FOREGROUND'] = d
+    '''
 
     # Update
     db.update(row)
