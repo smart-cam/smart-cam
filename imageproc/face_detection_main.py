@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
     # Test Code Only
     #db.create_items()
-    #time.sleep(5)
+    #time.sleep()
 
     if os.path.exists(OUTPUT_DIR):
         shutil.rmtree(OUTPUT_DIR)

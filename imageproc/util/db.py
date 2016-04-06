@@ -64,13 +64,15 @@ class DynamoDBUtils(object):
         print "# Uploading Data for {0},{1}: {2}".format(c_id,cam_id,num)
         self.sc.put_item(data)
     '''
-    def create_items(self):
+
+    # <TEST ONLY> Creates one item in table
+    def create_items(self, num_items=2):
         cnt = 0
         for rasp_name in DynamoDBUtils.rasp_names:
-            for i in xrange(2):
+            for i in xrange(num_items):
                 cnt += 1
                 self.__create_item(rasp_name, cnt)
-                time.sleep(10)
+                time.sleep(num_items)
 
     # <TEST ONLY> Creates one item in table
     def __create_item(self, rasp_name, num):
@@ -85,6 +87,55 @@ class DynamoDBUtils(object):
 
         print "# Uploading Data for {0}: {1}".format(rasp_name, num)
         self.sc.put_item(data)
+
+    # <TEST ONLY> Creates multiple full items in table
+    def create_full_items(self, num_items=10, start_time=1459555200):
+        with self.sc.batch_write() as batch:
+            for rasp_name in DynamoDBUtils.rasp_names:
+                st = start_time
+                for i in xrange(num_items):
+                    batch.put_item(self.__create_full_item(rasp_name, st))
+                    st += 1.25  # 2 secs gap between 2 videos
+
+    # <TEST ONLY> Creates multiple full items in table
+    # All Hard code values for purpose of testing the Backend/UI Integration
+    def __create_full_item(self, rasp_name, start_time):
+        data = dict()
+
+        data['RASP_NAME'] = rasp_name
+        data['START_TIME'] = start_time
+        data['UPDATE_TIME'] = start_time + 5
+        data['S3_BUCKET'] = DynamoDBUtils.S3_BUCKET
+        data['S3_KEY'] = 'videos/video_1'
+
+        data['FRAME_COUNT'] = 10 * 10
+        data['FACE_COUNT'] = 5 * 10
+        data['FACE_COUNT_UNIQ'] = 1
+
+        # Face Counts / Detail
+        d = {}
+        #d['data'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 2, 9, 13, 11, 11, 10, 3, 0, 0, 0, 0, 0, 3, 10, 10, 10, 10, 9, 0, 0, 1, 9, 4, 9, 10, 10, 10, 2]
+        d['data'] = ['5','5','5','5','5','5','5','5','5','6']
+        data['FACE_COUNT_DTL'] = d
+
+        d = {}
+        #d['data'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+        d['data'] = ['0','0','0','0','0','0','0','0','0','1']
+        data['FACE_COUN_UNIQ_DTL'] = d
+
+        d = {}
+        d['data'] = ['0.1','0.1','0.1','0.05','0.05','0.15','0.001','0.05','0.01','0.01']
+        data['FOREGROUND'] = d
+
+        data['PROCESSED'] = 1
+        data['VERSION'] = 1
+
+        print "# Uploading Data for {0}: {1}".format(rasp_name, start_time)
+
+        # Converted to a Batch Write
+        #self.sc.put_item(data)
+
+        return data
 
     # Creates one item in table
     def create_item(self, rasp_name, s3_bucket, s3_key, s_time):
