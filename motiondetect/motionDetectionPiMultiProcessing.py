@@ -6,11 +6,16 @@ import picamera.array
 import cv2
 import multiprocessing
 import os
+import boto
+#import pprint
+from motion_utils.misc import upload_to_s3
+from motion_utils.db import DynamoDBUtils
 
 RPiName = 'Garage'
 FRAMES_PER_CLIP = 100    # This is FPS times VIDEO_LENGTH
 FPS = 10
 VIDEO_LENGTH = 10        # Is seconds
+BUCKET_NAME = 'w210-smartcam'
 
 def getMotionFromFrame(frame, threshold=0.001):
     # This function returns True if mass of truth is greater than threshold
@@ -38,14 +43,15 @@ def writeToFrame(frameTimestamp, frame, RPiName):
     return frame
 
 def cameraReader(cam_writer_frames_Queue):
-    while True:
-        FRAMES = list()
-        
-        camera = picamera.PiCamera()
-        camera.resolution = (320, 240)
-        camera.framerate = FPS
-        stream = picamera.array.PiRGBArray(camera)
+    
+    camera = picamera.PiCamera()
+    camera.resolution = (320, 240)
+    camera.framerate = FPS
+    stream = picamera.array.PiRGBArray(camera)
 
+    while True:
+
+        FRAMES = list()
         t1 = time.time()
         startTime = time.time()
         for c in xrange(FRAMES_PER_CLIP):
@@ -55,19 +61,21 @@ def cameraReader(cam_writer_frames_Queue):
             FRAMES.append((frameTimestamp, frame))
             stream.truncate(0)
         print "Camera Capture", time.time() - t1
-        camera.close()
         
         # Sending frame to processing process
         cam_writer_frames_Queue.put((startTime, FRAMES))
         del FRAMES
+
     return
+    camera.close()
 
 def videoWriter(cam_writer_frames_Queue, writer_blurrer_filename_Queue):
     while True:
         startTime, FRAMES = cam_writer_frames_Queue.get()
         t1 = time.time()
         # Writing frames to disk
-        fourcc = cv2.cv.CV_FOURCC(*'XVID')
+        #fourcc = cv2.cv.CV_FOURCC(*'XVID')
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
         filename_blurs = 'blurrer' + '_' + RPiName + '_' + repr(startTime) + ".avi"
         clipWriter = cv2.VideoWriter(filename_blurs, fourcc, 10, (320, 240))
 
@@ -113,9 +121,10 @@ def frameBlurrer(writer_blurrer_filename_Queue, blur_to_motiondetector_blurred_Q
     return
             
 
-def motionDetecter(blur_to_motiondetector_blurred_Queue,):
+def motionDetecter(blur_to_motiondetector_blurred_Queue, file_Queue):
     # Creating MOG object
-    fgbg = cv2.BackgroundSubtractorMOG()
+    #fgbg = cv2.BackgroundSubtractorMOG()
+    fgbg = cv2.createBackgroundSubtractorMOG2()
 
     # Start infinite loop here
     while True:
@@ -142,25 +151,42 @@ def motionDetecter(blur_to_motiondetector_blurred_Queue,):
         with open(filename[8:-4]+'.motion', 'w') as f:
             f.write(str(motionFlag) + '\n')
             f.write(str(FOREGROUND))
-            f.close()
 
         # Deleteing temporary used by Blurrer
         os.remove(filename)
-            
-        
+        file_Queue.put((filename, FOREGROUND))
+                
     return
+
+# process for uploading data to S3 and Dynamo
+def uploader(file_Queue, db):
+    while True:
+        filename, foreground = file_Queue.get()
+
+        upload_to_s3(BUCKET_NAME, filename[8:], filename[8:])
+        timestamp = float(filename[15:-4])
+        # convert float array to strings as needed for Dynamo
+        fg_string = [str(item) for item in foreground]
+        db.create_item(RPiName, BUCKET_NAME, filename[8:], timestamp, fg_string)
+
+    return
+
 
 if __name__ == "__main__":    
     cam_writer_frames_Queue = multiprocessing.Queue()
     writer_blurrer_filename_Queue = multiprocessing.Queue()
     blur_to_motiondetector_blurred_Queue = multiprocessing.Queue()
+    file_Queue = multiprocessing.Queue()
+    db = DynamoDBUtils()
 
     camReader1_t = multiprocessing.Process(target=cameraReader, args=(cam_writer_frames_Queue,))
     videoWriter_t = multiprocessing.Process(target=videoWriter, args=(cam_writer_frames_Queue,writer_blurrer_filename_Queue,))
     frameBlurrer_t = multiprocessing.Process(target=frameBlurrer, args=(writer_blurrer_filename_Queue, blur_to_motiondetector_blurred_Queue))
-    motionDetector_t = multiprocessing.Process(target=motionDetecter, args=(blur_to_motiondetector_blurred_Queue,))
+    motionDetector_t = multiprocessing.Process(target=motionDetecter, args=(blur_to_motiondetector_blurred_Queue, file_Queue))
+    uploader_t = multiprocessing.Process(target=uploader, args=(file_Queue, db))
 
     camReader1_t.start()
     videoWriter_t.start()
     frameBlurrer_t.start()
     motionDetector_t.start()
+    uploader_t.start()
