@@ -95,7 +95,7 @@ class DynamoDBUtils(object):
                 st = start_time
                 for i in xrange(num_items):
                     batch.put_item(self.__create_full_item(rasp_name, st))
-                    st += 1.25  # 2 secs gap between 2 videos
+                    st += 11.25  # 10 + 1.25 secs between 2 video files
 
     # <TEST ONLY> Creates multiple full items in table
     # All Hard code values for purpose of testing the Backend/UI Integration
