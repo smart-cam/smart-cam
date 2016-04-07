@@ -9,7 +9,8 @@ print img1.shape
 #cv2.imshow('Input', img1)
 
 fourcc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v') # note the lower case
-video = cv2.VideoWriter('../../videos/video_100_frames.mp4',fourcc, 20.0, (width,height))
+#video = cv2.VideoWriter('../../videos/video_100_frames_1.mp4',fourcc, 20.0, (width,height))
+video = cv2.VideoWriter('../../videos/video_100_frames_2.mp4',fourcc, 20.0, (width,height))
 
 '''
 cnt = 1
@@ -24,7 +25,7 @@ for f in glob.glob("/Users/ssatpati/tmp/face_detection/P1E_S1_C1/*.jpg"):
 
 '''
 
-for f in glob.glob("/Users/ssatpati/tmp/face_detection/100_FRAMES/*.jpg"):
+for f in glob.glob("/Users/ssatpati/tmp/face_detection/100_FRAMES/2/*.jpg"):
     print f
     video.write(cv2.imread(f))
 

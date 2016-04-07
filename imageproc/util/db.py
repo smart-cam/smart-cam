@@ -90,23 +90,28 @@ class DynamoDBUtils(object):
 
     # <TEST ONLY> Creates multiple full items in table
     def create_full_items(self, num_items=10, start_time=1459555200):
+        cnt = 0
         with self.sc.batch_write() as batch:
             for rasp_name in DynamoDBUtils.rasp_names:
                 st = start_time
                 for i in xrange(num_items):
-                    batch.put_item(self.__create_full_item(rasp_name, st))
+                    cnt += 1
+                    if cnt % 2 == 0:
+                        batch.put_item(self.__create_full_item(rasp_name, st, 'videos/video_100_frames_1.mp4'))
+                    else:
+                        batch.put_item(self.__create_full_item(rasp_name, st, 'videos/video_100_frames_2.mp4'))
                     st += 11.25  # 10 + 1.25 secs between 2 video files
 
     # <TEST ONLY> Creates multiple full items in table
     # All Hard code values for purpose of testing the Backend/UI Integration
-    def __create_full_item(self, rasp_name, start_time):
+    def __create_full_item(self, rasp_name, start_time, s3_key):
         data = dict()
 
         data['RASP_NAME'] = rasp_name
         data['START_TIME'] = start_time
         data['UPDATE_TIME'] = start_time + 5
         data['S3_BUCKET'] = DynamoDBUtils.S3_BUCKET
-        data['S3_KEY'] = 'videos/video_1'
+        data['S3_KEY'] = s3_key
 
         data['FRAME_COUNT'] = 10 * 10
         data['FACE_COUNT'] = 5 * 10
