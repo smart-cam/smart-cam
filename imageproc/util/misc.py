@@ -99,4 +99,7 @@ if __name__ == '__main__':
     '''
 
 
-    print download_from_s3(BUCKET_NAME, 'videos/video_1.avi', '.')
+    #print download_from_s3(BUCKET_NAME, 'videos/video_1.avi', '.')
+    print upload_to_s3(BUCKET_NAME,
+                       'videos/video_100_frames_1.mp4',
+                       '/Users/ssatpati/0-DATASCIENCE/DEV/github/smart-cam/videos/video_100_frames_1.mp4')

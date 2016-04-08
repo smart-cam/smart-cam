@@ -20,6 +20,24 @@ class DynamoDBUtils(object):
         "cid2" : ["cam1","cam2"]
     }
 
+    FACES = {
+                 'videos/video_100_frames_1.mp4': {
+                     'face_count': 59,
+                     'face_count_dtl': ['0', '1', '8', '12', '12', '11', '10', '4', '1', '0'],
+                     'face_count_uniq': 3,
+                     'face_count_uniq_dtl': ['0', '1', '0', '0', '0', '1', '0', '0', '1', '0'],
+                     'frame_count': 100,
+                     'time_taken': '0:00:04.731971'
+                 },
+                 'videos/video_100_frames_2.mp4': {'face_count': 62,
+                     'face_count_dtl': ['10', '10', '0', '0', '0', '9', '5', '8', '10', '10'],
+                     'face_count_uniq': 2,
+                     'face_count_uniq_dtl': ['1', '0', '0', '0', '0', '1', '0', '0', '0', '0'],
+                     'frame_count': 100,
+                     'time_taken': '0:00:04.955812'
+                 }
+            }
+
     rasp_names = ["kitchen", "garage"]
 
     cols = ['START_TIME','LEN','PROCESSED','S3_BUCKET','S3_KEY','VERSION']
@@ -36,34 +54,6 @@ class DynamoDBUtils(object):
         self.sc = Table('SMARTCAM', connection=self.conn)
         print self.conn.list_tables()
         pprint.pprint(self.conn.describe_table('SMARTCAM'))
-
-    # <TEST ONLY> Creates Sample Records: 10 records per cust/cam
-    '''
-    def create_items(self):
-        cnt = 0
-        for cust,cams in DynamoDBUtils.cust_pie_dict.iteritems():
-            for cam in cams:
-                for i in xrange(2):
-                    cnt += 1
-                    self.__create_item(cust, cam, cnt)
-                    time.sleep(10)
-
-
-    # <TEST ONLY> Creates one item in table
-    def __create_item(self, c_id, cam_id, num):
-        data = dict()
-
-        data['RASP_NAME'] = c_id + '_' + cam_id
-        data['START_TIME'] = time.time()
-        data['S3_BUCKET'] = 'w210-smartcam'
-        data['S3_KEY'] = 'videos/video_{0}.avi'.format(num)
-        data['PROCESSED'] = 0
-        data['VERSION'] = 0
-        data['LEN'] = randint(5, 60)
-
-        print "# Uploading Data for {0},{1}: {2}".format(c_id,cam_id,num)
-        self.sc.put_item(data)
-    '''
 
     # <TEST ONLY> Creates one item in table
     def create_items(self, num_items=2):
@@ -90,38 +80,41 @@ class DynamoDBUtils(object):
 
     # <TEST ONLY> Creates multiple full items in table
     def create_full_items(self, num_items=10, start_time=1459555200):
+        cnt = 0
         with self.sc.batch_write() as batch:
             for rasp_name in DynamoDBUtils.rasp_names:
                 st = start_time
                 for i in xrange(num_items):
-                    batch.put_item(self.__create_full_item(rasp_name, st))
-                    st += 1.25  # 2 secs gap between 2 videos
+                    cnt += 1
+                    if cnt % 2 == 0:
+                        batch.put_item(self.__create_full_item(rasp_name, st, 'videos/video_100_frames_1.mp4'))
+                    else:
+                        batch.put_item(self.__create_full_item(rasp_name, st, 'videos/video_100_frames_2.mp4'))
+                    st += 11.25  # 10 + 1.25 secs between 2 video files
 
     # <TEST ONLY> Creates multiple full items in table
     # All Hard code values for purpose of testing the Backend/UI Integration
-    def __create_full_item(self, rasp_name, start_time):
+    def __create_full_item(self, rasp_name, start_time, s3_key):
         data = dict()
 
         data['RASP_NAME'] = rasp_name
         data['START_TIME'] = start_time
         data['UPDATE_TIME'] = start_time + 5
         data['S3_BUCKET'] = DynamoDBUtils.S3_BUCKET
-        data['S3_KEY'] = 'videos/video_1'
+        data['S3_KEY'] = s3_key
 
-        data['FRAME_COUNT'] = 10 * 10
-        data['FACE_COUNT'] = 5 * 10
-        data['FACE_COUNT_UNIQ'] = 1
+        data['FRAME_COUNT'] = DynamoDBUtils.FACES[s3_key]['frame_count']
+        data['FACE_COUNT'] = DynamoDBUtils.FACES[s3_key]['face_count']
+        data['FACE_COUNT_UNIQ'] = DynamoDBUtils.FACES[s3_key]['face_count_uniq']
 
         # Face Counts / Detail
         d = {}
-        #d['data'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 2, 9, 13, 11, 11, 10, 3, 0, 0, 0, 0, 0, 3, 10, 10, 10, 10, 9, 0, 0, 1, 9, 4, 9, 10, 10, 10, 2]
-        d['data'] = ['5','5','5','5','5','5','5','5','5','6']
-        data['FACE_COUNT_DTL'] = d
+        #d['data'] = ['5','5','5','5','5','5','5','5','5','6']
+        data['FACE_COUNT_DTL'] = DynamoDBUtils.FACES[s3_key]['face_count_dtl']
 
         d = {}
-        #d['data'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
-        d['data'] = ['0','0','0','0','0','0','0','0','0','1']
-        data['FACE_COUN_UNIQ_DTL'] = d
+        #d['data'] = ['0','0','0','0','0','0','0','0','0','1']
+        data['FACE_COUN_UNIQ_DTL'] = DynamoDBUtils.FACES[s3_key]['face_count_uniq_dtl']
 
         d = {}
         d['data'] = ['0.1','0.1','0.1','0.05','0.05','0.15','0.001','0.05','0.01','0.01']
