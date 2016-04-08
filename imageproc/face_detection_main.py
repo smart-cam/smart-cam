@@ -77,11 +77,16 @@ def process_item(row):
 
             # Update Fields in DB
             update_record(row, report)
+
+            #Delete the file
+            os.remove(local_file)
         else:
             print '[{0}][{1}] FAILED Downloading File: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY'])
     except Exception as e:
         print e
         print '[{0}][{1}] FAILED Processing Video: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY'])
+        #Delete the file
+        os.remove(local_file)
 
 
 if __name__ == '__main__':
