@@ -1,4 +1,5 @@
 from util.db import DynamoDBUtils
+import os
 
 # Create all Classes
 db = DynamoDBUtils()

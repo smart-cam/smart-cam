@@ -29,7 +29,7 @@ def upload_to_s3(bucket_name, key_name, video_file):
     return ret_val
 
 
-def download_from_s3(bucket_name, key_name, local_out_dir='~/tmp'):
+def download_from_s3(bucket_name, key_name, local_out_dir='/tmp'):
     cfg = Config()
     # connect to the bucket
     conn = boto.connect_s3(cfg.get("aws", "access_key_id"),
