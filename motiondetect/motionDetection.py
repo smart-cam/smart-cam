@@ -154,7 +154,8 @@ def motionDetecter(blur_to_motiondetector_blurred_Queue, file_Queue):
 
         # Deleteing temporary used by Blurrer
         os.remove(filename)
-        file_Queue.put((filename, FOREGROUND))
+        if motionFlag > 0:
+            file_Queue.put((filename, FOREGROUND))
                 
     return
 
@@ -168,7 +169,7 @@ def uploader(file_Queue, db):
         timestamp = float(filename2[len(RPiName)+1:-4])
         # convert float array to strings as needed for Dynamo
         fg_string = [str(item) for item in foreground]
-        db.create_item(RPiName, BUCKET_NAME, filename2, timestamp, fg_string)
+        db.create_item(RPiName, BUCKET_NAME, 'videos/' + filename2, timestamp, fg_string)
 
     return
 
