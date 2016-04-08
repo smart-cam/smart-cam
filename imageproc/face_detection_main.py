@@ -14,7 +14,7 @@ import random
 VIDEO_FILE = '../resources/video.avi'
 
 PARALLEL_PROCS = 10
-OUTPUT_DIR = '../videos'
+OUTPUT_DIR = '~/videos'
 
 # Create all Classes
 db = DynamoDBUtils()
