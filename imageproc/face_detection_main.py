@@ -1,6 +1,7 @@
 from face_detection import FaceDetection
 from util.db import DynamoDBUtils
 from util import misc
+from util import log
 
 import multiprocessing
 import pprint
@@ -8,7 +9,8 @@ import time
 import shutil
 import os
 
-import random
+logger = log.getLogger(__name__)
+
 
 #Path to Default Video File
 VIDEO_FILE = '../resources/video.avi'
@@ -40,19 +42,6 @@ def update_record(row, report):
     d['data'] = report['face_count_uniq_dtl']
     row['FACE_COUN_UNIQ_DTL'] = d
 
-    # Test Code Only
-    '''
-    d= {}
-    data = []
-    for i in xrange(len(report['face_count_dtl'])):
-        if i % 2 == 0:
-            data.append('0.01')
-        else:
-            data.append('0.02')
-    d['data'] = data
-    row['FOREGROUND'] = d
-    '''
-
     # Update
     db.update(row)
 
@@ -60,15 +49,15 @@ def update_record(row, report):
 def process_item(row):
     '''Face Counting needs to be integrated here'''
     try:
-        print 'Processing: <{0}> <{1}> <{2}> <{3}> <{4}>'.format(row['RASP_NAME'],
+        logger.info('Processing: <{0}> <{1}> <{2}> <{3}> <{4}>'.format(row['RASP_NAME'],
                                                                  row['START_TIME'],
                                                                  row['PROCESSED'],
                                                                  row['S3_BUCKET'],
-                                                                 row['S3_KEY'])
+                                                                 row['S3_KEY']))
         # Download File from S3
         ret_status, local_file = misc.download_from_s3(row['S3_BUCKET'], row['S3_KEY'], OUTPUT_DIR)
         if ret_status:
-            print '[{0}][{1}] Video File: {2}'.format(row['RASP_NAME'],row['START_TIME'],local_file)
+            logger.info('[{0}][{1}] Video File: {2}'.format(row['RASP_NAME'],row['START_TIME'],local_file))
             #time.sleep(10)
 
             # Run Face Count
@@ -81,16 +70,18 @@ def process_item(row):
             #Delete the file
             os.remove(local_file)
         else:
-            print '[{0}][{1}] FAILED Downloading File: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY'])
+            logger.info('[{0}][{1}] FAILED Downloading File: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY']))
     except Exception as e:
-        print e
-        print '[{0}][{1}] FAILED Processing Video: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY'])
+        logger.error(e)
+        logger.info('[{0}][{1}] FAILED Processing Video: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY']))
         #Delete the file
         os.remove(local_file)
 
 
 if __name__ == '__main__':
     '''Main Entry Point to the Program'''
+
+    sleep_secs = 10
 
     # Test Code Only
     #db.purge_table()
@@ -132,8 +123,8 @@ if __name__ == '__main__':
                     job.join()
                 del jobs[:]  # Re-Init
 
-        print '# Processing Done for this Batch, sleeping for 10 secs'
-        time.sleep(10)
+        logger.info('# Processing Done for this Batch, sleeping for {0} secs'.format(sleep_secs))
+        time.sleep(sleep_secs)
 
 
     #report = fd.process(VIDEO_FILE)

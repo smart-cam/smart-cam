@@ -5,12 +5,14 @@ import pprint
 import time
 import json
 import multiprocessing
+import log
 
 import boto
 from boto.dynamodb2.table import Table
 
 from config import Config
 
+logger = log.getLogger(__name__)
 
 class DynamoDBUtils(object):
 
@@ -52,7 +54,7 @@ class DynamoDBUtils(object):
                                         aws_access_key_id=aws_access_key_id,
                                         aws_secret_access_key=aws_secret_access_key)
         self.sc = Table('SMARTCAM', connection=self.conn)
-        print self.conn.list_tables()
+        logger.info(self.conn.list_tables())
         pprint.pprint(self.conn.describe_table('SMARTCAM'))
 
     # <TEST ONLY> Creates one item in table
@@ -75,7 +77,7 @@ class DynamoDBUtils(object):
         data['PROCESSED'] = 0
         data['VERSION'] = 0
 
-        print "# Uploading Data for {0}: {1}".format(rasp_name, num)
+        logger.info("# Uploading Data for {0}: {1}".format(rasp_name, num))
         self.sc.put_item(data)
 
     # <TEST ONLY> Creates multiple full items in table
@@ -123,7 +125,7 @@ class DynamoDBUtils(object):
         data['PROCESSED'] = 1
         data['VERSION'] = 1
 
-        print "# Uploading Data for {0}: {1}".format(rasp_name, start_time)
+        logger.info("# Uploading Data for {0}: {1}".format(rasp_name, start_time))
 
         # Converted to a Batch Write
         #self.sc.put_item(data)
@@ -142,7 +144,7 @@ class DynamoDBUtils(object):
         data['VERSION'] = 0
         data['LEN'] = randint(5, 60)
 
-        print "# Uploading Data for {0}: {1}:{2}".format(rasp_name, s3_bucket, s3_key)
+        logger.info("# Uploading Data for {0}: {1}:{2}".format(rasp_name, s3_bucket, s3_key))
         self.sc.put_item(data)
 
     # Fetch items
@@ -150,9 +152,9 @@ class DynamoDBUtils(object):
         rows = self.sc.query_2(index='PROCESSED-index',PROCESSED__eq=0)
         cnt = 0
         for row in rows:
-            print row['RASP_NAME'],row['START_TIME'],row['PROCESSED']
+            logger.info('{0},{1},{2}'.format(row['RASP_NAME'],row['START_TIME'],row['PROCESSED']))
             cnt += 1
-        print '# Total unprocessed items: {0}'.format(cnt)
+        logger.info('# Total unprocessed items: {0}'.format(cnt))
         return rows
 
     def purge_table(self):
@@ -160,23 +162,23 @@ class DynamoDBUtils(object):
         for row in self.sc.scan():
             cnt += 1
             row.delete()
-            print 'Deleted Row: {0}'.format(cnt)
+            logger.info('Deleted Row: {0}'.format(cnt))
 
     def get_unprocessed_items(self):
         return self.sc.query_2(index='PROCESSED-index',PROCESSED__eq=0)
 
     def get_items_by_id(self, id):
-        return self.sc.query_2(CUSTID_PIEID__eq=id)
+        return self.sc.query_2(RASP_NAME__eq=id)
 
     def get_items_by_id_range(self, id, start, end):
-        return self.sc.query_2(CUSTID_PIEID__eq=id, START_TIME__between=(start, end))
+        return self.sc.query_2(RASP_NAME__eq=id, START_TIME__between=(start, end))
 
     def update(self, row):
         try:
             row.save(overwrite=True)
         except Exception as e:
-            print e
-            print '[FAILED] Processing: ', row['RASP_NAME'],row['START_TIME'],row['PROCESSED']
+            logger.error(e)
+            logger.info('[FAILED] Processing: ', row['RASP_NAME'],row['START_TIME'],row['PROCESSED'])
 
     def stats(self,lst):
         quotient, remainder = divmod(len(lst), 2)
@@ -191,10 +193,10 @@ class DynamoDBUtils(object):
 if __name__ == "__main__":
     db = DynamoDBUtils()
     db.display_items()
-    print '### Query By ID: '
+    logger.info('### Query By ID: ')
     for row in db.get_items_by_id('kitchen'):
-        print row['RASP_NAME']
-    print '### Query By Range Key: '
+        logger.info(row['RASP_NAME'])
+    logger.info('### Query By Range Key: ')
     for row in db.get_items_by_id_range('cid1_cam1', 1459621230, 1459621270):
-        print row['RASP_NAME'],row['START_TIME']
+        logger.info('{0},{1},{2}'.format(row['RASP_NAME'],row['START_TIME'],row['PROCESSED']))
     db.close()

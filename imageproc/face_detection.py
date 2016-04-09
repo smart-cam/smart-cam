@@ -7,6 +7,9 @@ import pprint
 import numpy as np
 
 from util.config import Config
+from util import log
+
+logger = log.getLogger(__name__)
 
 
 class FaceDetection(object):
@@ -26,7 +29,7 @@ class FaceDetection(object):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces_rects = self.face_cascade.detectMultiScale(gray, 1.3, 5)
 
-        print "\n### [{0}] Faces Detected: {1}\n{2}\n".format(frame_id, np.shape(faces_rects)[0], faces_rects)
+        logger.info("[{0}] Faces Detected: {1}\n{2}\n".format(frame_id, np.shape(faces_rects)[0], faces_rects))
 
         for (x, y, w, h) in faces_rects:
             cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
@@ -35,9 +38,9 @@ class FaceDetection(object):
 
     # Assuming video snippets won't contain more than a few face ROI(s)
     def __get_uniq_faces_curr_frame(self, frame_id, faces_roi_hists_prev, faces_roi_hists):
-        print "\n### [{0}] Face Similarity: Prev: {1}, Curr: {2}".format(frame_id,
+        logger.info("[{0}] Face Similarity: Prev: {1}, Curr: {2}".format(frame_id,
                                                                          len(faces_roi_hists_prev),
-                                                                         len(faces_roi_hists))
+                                                                         len(faces_roi_hists)))
         # First Time
         if len(faces_roi_hists_prev) == 0:
             return len(faces_roi_hists)
@@ -53,7 +56,7 @@ class FaceDetection(object):
                 #print "\nrh1 {0}: {1}".format(type(rh1),np.shape(rh1))
                 #print "\nrh2 {0}: {1}".format(type(rh2),np.shape(rh2))
                 corr = cv2.compareHist(rh1, rh2, cv2.HISTCMP_CORREL)
-                print "### [{0}] Similarity Metrics: {1}".format(frame_id, corr)
+                logger.info("[{0}] Similarity Metrics: {1}".format(frame_id, corr))
                 if corr >= 0.35:
                     # Match Found, can break the loop for this histogram in current frame
                     match_found = True
@@ -62,7 +65,7 @@ class FaceDetection(object):
             if not match_found:
                 uniq_faces_curr_frame += 1
 
-        print "### [{0}] Total Unique Faces in Current Frame: {1}\n".format(frame_id, uniq_faces_curr_frame)
+        logger.info("[{0}] Total Unique Faces in Current Frame: {1}".format(frame_id, uniq_faces_curr_frame))
         return uniq_faces_curr_frame
 
 
@@ -165,13 +168,13 @@ class FaceDetection(object):
                 faces.append((frame_id,face_count,face_count_uniq))
 
                 # Count
-                print "\n### [{0}] Total Estimated Unique Faces so far: {1}".format(frame_id, total_est_uniq_faces)
+                logger.info("[{0}] Total Estimated Unique Faces so far: {1}\n".format(frame_id, total_est_uniq_faces))
 
                 # For Debugging Purposes
                 #if frame_id > 300:
                 #    break
             except Exception as e:
-                print e
+                logger.error(e)
                 break
 
         cap.release()
