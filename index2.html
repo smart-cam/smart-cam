@@ -1,0 +1,102 @@
+<h1 id="overview">Overview</h1>
+
+<p>Surveillance cameras are <del>ubiquitous</del> everywhere. Both <del>individuals and organizations</del> home and business users want to be alerted of any unexpected presence at their house or premises.</p>
+
+<p>Video image processing made it possible to record only what is needed (e.g., when motion or the presence of a certain object or person is detected) instead of indefinitely. Combined with machine learning techniques, it also allows to search patterns that can be useful for businesses such as finding hot spots, the most common paths taken by customers, and the most affluent hours. Hence, surveillance is not the only <del>feature</del> benefit of monitoring systems for business users.</p>
+
+<h3 id="problem-statement">Problem Statement</h3>
+
+<p>Monitoring systems used to be <del>complex and</del> expensive. The advent of open-source computer-vision libraries like <em>OpenCV</em> and inexpensive single-board computers such as the <em>Raspberry Pi</em> has made building a monitoring system easier than ever, but  a solution based on them still presents some challenges to potential users:</p>
+
+<ul>
+<li><p>There are no out-of-the-box solutions like this: users need <del>the skills</del> to integrate the required hardware and software components.</p></li>
+<li><p>Depending on the user’s needs, the hardware must have enough computing power to perform certain operations.</p></li>
+<li><p>Some users may require an integrated system that receives videos from different cameras / locations.</p></li>
+</ul>
+
+<h3 id="our-proposal">Our Proposal</h3>
+
+<p>We have built a <strong>cloud-based video monitoring system able to detect motion and count human faces</strong> (we focused on these two features, but others could be easily added in the future), that is simple and inexpensive but also powerful, reliable, and scalable. </p>
+
+<p>The system is aimed at two customer segments: <strong>home</strong> and <strong>business users</strong> (stores, offices, malls, …). Everything they need (at each location they want to monitor) is a Raspberry Pi with a camera module; most of the <del>video</del> processing is done in the cloud and all the information is accessible through a web browser.</p>
+
+<h3 id="value-proposition">Value Proposition</h3>
+
+<p>Our system is:</p>
+
+<ul>
+<li><p><strong>Cost-effective</strong>: all the required hardware is a Raspberry Pi with a camera, whose price keeps dropping (the same applies to cloud computing and </p></li>
+<li><p><strong>Easy-to-install</strong>: users can purchase an standard Raspberry Pi at their convenience and install the necessary software by themselves (following a list of simple steps), or acquire one with the software pre-installed from us.</p>
+
+<ul><li><del>An added benefit for home users in rented houses, who usually do not have the liberty to install comprehensive alarm systems.</del></li></ul></li>
+<li><p><strong>Scalable</strong>: adding more cameras is just a matter of installing and registering additional Raspberry Pis.</p></li>
+</ul>
+
+<p>Other benefits:</p>
+
+<ul>
+<li><p>Users have <strong>real-time</strong> access to the information: alerts, analytics, and video files.</p></li>
+<li><p><strong>Dual functionality</strong> (especially for business users): The system can be used for surveillance purposes (e.g., once the store is closed) and also to get <del>helpful</del> insights to optimize business. For example, it can provide information about the amount of people entering a store (or moving through it) over time, which can be used to predict sales or adjust staff levels.</p>
+
+<ul><li>The face counting feature can also be helpful for home users, once face recognition is added: alerts would not be sent if the face of a person has been previously added to the system.</li></ul></li>
+<li><p>The video files are stored in the cloud (so there is no risk that the Raspberry Pi will run out of storage).</p></li>
+</ul>
+
+<p><font color="red">———TO BE DELETED———</font></p>
+
+<p><font color="red"><em>Value proposition is a clear statement that</em></font></p>
+
+<p><font color="red">+ <em>explains how your product solves customers’ problems or improves their situation (<strong>relevancy</strong>),</em> <br>
++ <em>delivers specific benefits (<strong>quantified value</strong>), and</em> <br>
++ <em>tells the ideal customer why they should buy from you and not from the competition (<strong>unique differentiation</strong>).</em></font></p>
+
+<p><font color="red">———(END OF) TO BE DELETED———</font></p>
+
+<h1 id="our-solution">Our Solution</h1>
+
+
+
+<h3 id="architecture">Architecture</h3>
+
+<p><img src="https://raw.githubusercontent.com/smart-cam/smart-cam/gh-pages/images/Architecture.png" alt="Architecture Diagram" title=""></p>
+
+
+
+<h1 id="challenges">Challenges</h1>
+
+<p>….</p>
+
+
+
+<h1 id="possible-improvements">Possible Improvements</h1>
+
+<ul>
+<li>Improve the system’s Sensitivity and Precision (and hence the its Accuracy). I.e., minimize the amount of false positives (motion is detected in the absence of it) and false negatives (there is motion but it’s not detected). <br>
+<ul><li>Recall that:</li></ul></li>
+</ul>
+
+
+
+<p><script type="math/tex; mode=display" id="MathJax-Element-275">\text{Sensitivity} = \frac{TP}{TP+FN}; \ \ \text{Precision} = \frac{TP}{TP+FP}</script> <script type="math/tex; mode=display" id="MathJax-Element-276">\text{Accuracy}=\frac{TP+TN}{TP+TN+FP+FN}</script></p>
+
+<ul>
+<li><p>Improve face detection (considering other algorithms aside from Viola Jones).</p></li>
+<li><p>Add more video processing features.</p>
+
+<ul><li>Such as face recognition, which would allow the system to alert of certain individuals or not, or keep track of the ones it has already detected (thus counting all the different people that has been recorded so far). <br>
+<img src="https://raw.githubusercontent.com/smart-cam/smart-cam/gh-pages/images/FaceCounting.png" alt="Architecture Diagram" title=""></li></ul></li>
+<li><p>Implement an alert system that sends an email to the user upon certain events (whenever a video is captured, if the number of faces exceeds a certain threshold, etc.).</p></li>
+</ul>
+
+<h1 id="our-team">Our Team</h1>
+
+<ul>
+<li><a href="https://github.com/jamesrt95">James Route</a></li>
+<li><a href="https://github.com/juanjocarin">Juan Jose Carin</a></li>
+<li><a href="https://github.com/sayantansatpati">Sayantan Satpati</a></li>
+<li><a href="https://github.com/vgangwar">Vineet Gangwar</a></li>
+</ul>
+
+<h1 id="support-contact">Support / Contact</h1>
+
+<p>Would you like to know more about this project or our team? Check out our <a href="https://github.com/smart-cam/smart-cam">code</a> or <a href="mailto:mids-w210@googlegroups.com">contact us</a> and we’ll be glad to tell you more.</p>
