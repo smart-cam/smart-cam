@@ -23,7 +23,7 @@ if __name__ == '__main__':
     '''
 
     #local_file = '../videos/video_100_frames_2.mp4'
-    local_file = '../videos/Office_1460080165.688278.mp4'
+    local_file = '../videos/video_100_frames_1.mp4'
 
     fd = FaceDetection()
     report = fd.process(local_file, show_frame=False)

@@ -41,3 +41,7 @@ for beg, end in get_range(len(faces)):
 for i in xrange(1,7):
     print i
 
+foreground = [1,2,3,4,5]
+
+print [str(item) for item in foreground]
+print {'data': [str(item) for item in foreground]}
