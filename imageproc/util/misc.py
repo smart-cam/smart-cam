@@ -54,6 +54,30 @@ def download_from_s3(bucket_name, key_name, local_out_dir='/tmp'):
     return ret_val
 
 
+def delete_keys(bucket_name, key_pattern):
+    cfg = Config()
+    # connect to the bucket
+    conn = boto.connect_s3(cfg.get("aws", "access_key_id"),
+                            cfg.get("aws", "secret_access_key"))
+
+    ret_val = True
+
+    try:
+        print("# S3: Fetching Keys from Bucket: {0}".format(bucket_name))
+        bucket = conn.get_bucket(bucket_name)
+
+        for key in bucket.get_all_keys():
+            print key
+            if os.path.basename(key.name).startswith(key_pattern):
+                key.delete()
+                print 'Deleted {0}'.format(key.name)
+    except boto.exception.S3ResponseError as err:
+        print(err)
+        ret_val = False
+
+    return ret_val
+
+
 def create_bucket(bucket_name):
     '''Create Bucket: CAUTION ### It deletes the bucket'''
     cfg = Config()
@@ -85,6 +109,8 @@ def create_bucket(bucket_name):
     return ret_val
 
 
+
+
 if __name__ == '__main__':
     BUCKET_NAME = 'smart-cam'
     N = 6
@@ -98,8 +124,4 @@ if __name__ == '__main__':
                            '/Users/ssatpati/0-DATASCIENCE/DEV/github/smart-cam/resources/video.avi')
     '''
 
-
-    #print download_from_s3(BUCKET_NAME, 'videos/video_1.avi', '.')
-    print upload_to_s3(BUCKET_NAME,
-                       'videos/video_100_frames_1.mp4',
-                       '/Users/ssatpati/0-DATASCIENCE/DEV/github/smart-cam/videos/video_100_frames_1.mp4')
+    delete_keys(BUCKET_NAME, 'LivingRoom_')
