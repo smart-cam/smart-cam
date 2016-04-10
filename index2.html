@@ -13,6 +13,8 @@
 
 <p>Video image processing made it possible to record only what is needed (e.g., when motion or the presence of a certain object or person is detected) instead of indefinitely. Combined with machine learning techniques, it also allows to search patterns that can be useful for businesses such as finding hot spots, the most common paths taken by customers, and the most affluent hours. Hence, surveillance is not the only <del>feature</del> benefit of monitoring systems for business users.</p>
 
+
+
 <h3 id="problem-statement">Problem Statement</h3>
 
 <p>Monitoring systems used to be <del>complex and</del> expensive. The advent of open-source computer-vision libraries like <em>OpenCV</em> and inexpensive single-board computers such as the <em>Raspberry Pi</em> has made building a monitoring system easier than ever, but  a solution based on them still presents some challenges to potential users:</p>
@@ -23,11 +25,15 @@
 <li><p>Some users may require an integrated system that receives videos from different cameras / locations.</p></li>
 </ul>
 
+
+
 <h3 id="our-proposal">Our Proposal</h3>
 
 <p>We have built a <strong>cloud-based video monitoring system able to detect motion and count human faces</strong> (we focused on these two features, but others could be easily added in the future), that is simple and inexpensive but also powerful, reliable, and scalable. </p>
 
 <p>The system is aimed at two customer segments: <strong>home</strong> and <strong>business users</strong> (stores, offices, malls, …). Everything they need (at each location they want to monitor) is a Raspberry Pi with a camera module; most of the <del>video</del> processing is done in the cloud and all the information is accessible through a web browser.</p>
+
+
 
 <h3 id="value-proposition">Value Proposition</h3>
 
@@ -61,13 +67,36 @@
 
 <p><font color="red">———(END OF) TO BE DELETED———</font></p>
 
+
+
 <h1 id="our-solution">Our Solution</h1>
 
 
 
 <h3 id="architecture">Architecture</h3>
 
-<p><img src="https://raw.githubusercontent.com/smart-cam/smart-cam/gh-pages/images/Architecture.png" alt="Architecture Diagram" title=""></p>
+<p>As mentioned, the user just needs a <a href="https://www.raspberrypi.org/">Raspberry Pi</a><a href="#fn:1" id="fnref:1" title="See footnote" class="footnote">1</a>  with a <a href="https://www.raspberrypi.org/products/camera-module/">camera module</a>. We chose <a href="https://aws.amazon.com/">Amazon Web Services (AWS)</a> as our cloud infrastructure, where the video files and a database with information related to them (where they came from, when they were recorded, and information about the detected motion) are stored, and additional video processing is performed. All the information is accessible through an interactive website (like <a href="#user-interface">this one</a> you’re now visiting).</p>
+
+<p><img src="https://raw.githubusercontent.com/smart-cam/smart-cam/gh-pages/images/Architecture2.png" alt="Architecture Diagram" title=""></p>
+
+
+
+<h3 id="step-by-step-process">Step-by-step Process</h3>
+
+<ol>
+<li><p><strong>Motion detection</strong> is performed by the <strong>Raspberry Pi</strong>, using <a href="https://www.python.org/">Python</a> as programming language and <a href="http://opencv.org/">OpenCV</a> libraries for video processing.</p>
+
+<ul><li>From all the motion detection algorithms available in OpenCV, we selected one<a href="#fn:2" id="fnref:2" title="See footnote" class="footnote">2</a> based on <a href="http://www.ee.surrey.ac.uk/CVSSP/Publications/papers/KaewTraKulPong-AVBS01.pdf">Gaussian Mixture Model-based foreground and background segmentation</a>: a background probability model is constructed for each pixel, adapting to background changes by incrementally updating the mean and variance of existing Gaussians, incorporating some and discarding others.</li>
+<li>For each frame in the video, the background and foreground are segmented: the former will be largely static over consecutive frames<a href="#fn:3" id="fnref:3" title="See footnote" class="footnote">3</a>, so substantial changes are detected and assigned to the latter (and the background is then subtracted).</li>
+<li>The foreground may contain some noise (e.g., due to small changes in lighting conditions), which would result in false positives (motion is detected in the absence of it). To reduce the presence of those, we set a threshold to the number of pixels in a (320×240) frame that correspond to the foreground, whose final value is 0.05 (3,840 pixels).</li></ul></li>
+<li><p>The step above allows to <strong>upload to the cloud</strong> only those videos of interest, in which motion has been detected. The camera is constantly working, and upon motion detection a video file (of 10 seconds) is uploaded to a bucket in <a href="https://aws.amazon.com/s3/">Amazon S3</a>. Information about the video file (the Raspberry Pi ID, the timestamp, …) and the foreground size (the ratio of pixels corresponding to foreground) is also written in a <a href="https://aws.amazon.com/dynamodb/">DynamoDB</a> (NoSQL) database, in JSON format.</p></li>
+<li><p>Another Python program running in an <a href="https://aws.amazon.com/ec2/">Amazon EC2</a> virtual server reads from both sources (S3 and DynamoDB) to <strong>count faces</strong> in each video. The script queries the database for still unprocessed videos, runs the face counting algorithm on those, and updates the database.</p>
+
+<ul><li>We used a <a href="http://docs.opencv.org/3.0-alpha/modules/objdetect/doc/cascade_classification.html">cascade classifier</a> based on the <a href="https://en.wikipedia.org/wiki/Viola%E2%80%93Jones_object_detection_framework">Viola–Jones object detection framework</a>, which is capable of processing images extremely rapidly while achieving high detection rates.  <br>
+First, a cascade<a href="#fn:4" id="fnref:4" title="See footnote" class="footnote">4</a> of boosted<a href="#fn:5" id="fnref:5" title="See footnote" class="footnote">5</a> classifiers is trained with a few hundred sample views of a particular object (a face, in our case), called positive examples, and negative examples (arbitrary images of similar size). After the classifer is trained, it will output a 1 if the region is likely to show the object, and 0 otherwise. To search for the object in the whole image and in different sizes, the search window is moved across and the scan procedure is done several times at different scales.</li>
+<li>Doing this part of the video processing (and others that might be added in the future) in the cloud has the advantage of <strong>freeing up the Raspberry Pi from using its limited resources</strong>.</li></ul></li>
+<li><p>Finally, the user can access all the videos and information stored in S3 and DynamoDB, respectively, through an interactive website (<a href="#user-interface">see below for an example</a>), where he or she can overview, zoom, filter, and drill up and down the foreground size and face count of all the videos recorded by the Raspberry Pis, as well as play them.</p></li>
+</ol>
 
 
 
@@ -76,6 +105,10 @@
 <p>….</p>
 
 
+
+<h1 id="user-interface">User Interface</h1>
+
+<p>…</p>
 
 <h1 id="possible-improvements">Possible Improvements</h1>
 
@@ -86,7 +119,7 @@
 
 
 
-<p><script type="math/tex; mode=display" id="MathJax-Element-275">\text{Sensitivity} = \frac{TP}{TP+FN}; \ \ \text{Precision} = \frac{TP}{TP+FP}</script> <script type="math/tex; mode=display" id="MathJax-Element-276">\text{Accuracy}=\frac{TP+TN}{TP+TN+FP+FN}</script></p>
+<p><script type="math/tex; mode=display" id="MathJax-Element-214">\text{Sensitivity} = \frac{TP}{TP+FN}; \ \ \text{Precision} = \frac{TP}{TP+FP}</script> <script type="math/tex; mode=display" id="MathJax-Element-215">\text{Accuracy}=\frac{TP+TN}{TP+TN+FP+FN}</script></p>
 
 <ul>
 <li><p>Improve face detection (considering other algorithms aside from Viola Jones).</p></li>
@@ -97,6 +130,8 @@
 <li><p>Implement an alert system that sends an email to the user upon certain events (whenever a video is captured, if the number of faces exceeds a certain threshold, etc.).</p></li>
 </ul>
 
+
+
 <h1 id="our-team">Our Team</h1>
 
 <ul>
@@ -106,7 +141,11 @@
 <li><a href="https://github.com/vgangwar">Vineet Gangwar</a></li>
 </ul>
 
+
+
 <h1 id="support-contact">Support / Contact</h1>
 
-<p>Would you like to know more about this project or our team? Check out our <a href="https://github.com/smart-cam/smart-cam">code</a> or <a href="mailto:mids-w210@googlegroups.com">contact us</a> and we’ll be glad to tell you more.</p></div></body>
+<p>Would you like to know more about this project or our team? Check out our <a href="https://github.com/smart-cam/smart-cam">code</a> or <a href="mailto:mids-w210@googlegroups.com">contact us</a> and we’ll be glad to tell you more.</p>
+
+<div class="footnotes"><hr><ol><li id="fn:1">We used several <a href="https://www.raspberrypi.org/products/raspberry-pi-2-model-b/">Raspberry Pi 2 Model B</a>, the latest model as of February 2016, when we started working on this project. <a href="#fnref:1" title="Return to article" class="reversefootnote">↩</a></li><li id="fn:2">We also tried many other alternatives, and finally chose the one above based on its performance in terms of Sensitivity and Precision. <a href="#fnref:2" title="Return to article" class="reversefootnote">↩</a></li><li id="fn:3">Even small changes in shadowing and lighting conditions can make the background vary, but the algorithm provides some mechanisms to discern between those effects and actual motion, so only the latter is included in the foreground. Of course those mechanisms are not perfect, so the best results are obtained under controlled lighting conditions (and using fixed-mounted cameras). <a href="#fnref:3" title="Return to article" class="reversefootnote">↩</a></li><li id="fn:4">The classifier consists of several simpler classifiers (stages) that are applied subsequently to a region of interest until at some stage the candidate is rejected or all the stages are passed. <a href="#fnref:4" title="Return to article" class="reversefootnote">↩</a></li><li id="fn:5">The classifiers at every stage of the cascade are complex themselves and built out of basic classifiers (decision trees with at least 2 leaves) using a boosting technique (weighted voting), e.g., one of the multiple variants of Adaboost. <a href="#fnref:5" title="Return to article" class="reversefootnote">↩</a></li></ol></div></div></body>
 </html>
