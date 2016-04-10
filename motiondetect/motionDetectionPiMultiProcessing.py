@@ -11,13 +11,13 @@ import boto
 from motion_utils.misc import upload_to_s3
 from motion_utils.db import DynamoDBUtils
 
-RPiName = 'Garage'
+RPiName = 'FrontDoor'
 FRAMES_PER_CLIP = 100    # This is FPS times VIDEO_LENGTH
 FPS = 10
 VIDEO_LENGTH = 10        # Is seconds
-BUCKET_NAME = 'w210-smartcam'
+BUCKET_NAME = 'smart-cam'
 
-def getMotionFromFrame(frame, threshold=0.001):
+def getMotionFromFrame(frame, threshold=0.05):
     # This function returns True if mass of truth is greater than threshold
     frameCopy = frame.copy()
     totalMass = frameCopy.size
@@ -75,7 +75,7 @@ def videoWriter(cam_writer_frames_Queue, writer_blurrer_filename_Queue):
         t1 = time.time()
         # Writing frames to disk
         #fourcc = cv2.cv.CV_FOURCC(*'XVID')
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         filename_blurs = 'blurrer' + '_' + RPiName + '_' + repr(startTime) + ".avi"
         clipWriter = cv2.VideoWriter(filename_blurs, fourcc, 10, (320, 240))
 
@@ -84,7 +84,7 @@ def videoWriter(cam_writer_frames_Queue, writer_blurrer_filename_Queue):
 
         writer_blurrer_filename_Queue.put(filename_blurs)
 
-        filename = RPiName + '_' + repr(startTime) + ".avi"
+        filename = RPiName + '_' + repr(startTime) + ".mp4"
         clipWriter = cv2.VideoWriter(filename, fourcc, 10, (320, 240))
 
         
@@ -148,13 +148,16 @@ def motionDetecter(blur_to_motiondetector_blurred_Queue, file_Queue):
             FOREGROUND.append(max(FRACTIONS[FPS*i:FPS*(i+1)]))
 
         # Writing output to file
+        # remove the 'blurrer_' from the filename
         with open(filename[8:-4]+'.motion', 'w') as f:
             f.write(str(motionFlag) + '\n')
             f.write(str(FOREGROUND))
 
         # Deleteing temporary used by Blurrer
         os.remove(filename)
-        file_Queue.put((filename, FOREGROUND))
+
+        if motionFlag > 0:
+            file_Queue.put((filename, FOREGROUND))
                 
     return
 
@@ -162,12 +165,16 @@ def motionDetecter(blur_to_motiondetector_blurred_Queue, file_Queue):
 def uploader(file_Queue, db):
     while True:
         filename, foreground = file_Queue.get()
+        # make sure filename extension is mp4
+        filename = filename[:-3] + 'mp4'
 
-        upload_to_s3(BUCKET_NAME, filename[8:], filename[8:])
-        timestamp = float(filename[15:-4])
+        upload_to_s3(BUCKET_NAME, "videos/"+filename[8:], filename[8:])
+        #print filename + ", " +  filename[8+len(RPiName)+1:-4]
+        # extract the timestamp from the filename
+        timestamp = float(filename[8+len(RPiName)+1:-4])
         # convert float array to strings as needed for Dynamo
-        fg_string = [str(item) for item in foreground]
-        db.create_item(RPiName, BUCKET_NAME, filename[8:], timestamp, fg_string)
+        fg_data = {'data': [str(item) for item in foreground]}
+        db.create_item(RPiName, BUCKET_NAME, 'videos/'+filename[8:], timestamp, fg_data)
 
     return
 
