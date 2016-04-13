@@ -20,14 +20,17 @@ class FaceDetection(object):
     def __init__(self):
         cfg = Config()
         opencv_home = cfg.get("face_detection", "opencv_home")
-        self.face_cascade = cv2.CascadeClassifier('{0}/haarcascade_frontalface_default.xml'.format(opencv_home))
-        self.eye_cascade = cv2.CascadeClassifier('{0}/haarcascade_eye.xml'.format(opencv_home))
+        haarcascade = cfg.get("face_detection", "haarcascade")
+
+        self.haarcascade = cv2.CascadeClassifier('{0}/{1}'.format(opencv_home,
+                                                                  haarcascade))
+        #self.eye_cascade = cv2.CascadeClassifier('{0}/haarcascade_eye.xml'.format(opencv_home))
 
     def __detect_faces(self,frame_id, frame):
         """Detect Faces"""
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces_rects = self.face_cascade.detectMultiScale(gray, 1.3, 5)
+        faces_rects = self.haarcascade.detectMultiScale(gray, 1.3, 5)
 
         logger.info("[{0}] Faces Detected: {1}\n{2}\n".format(frame_id, np.shape(faces_rects)[0], faces_rects))
 
@@ -38,12 +41,18 @@ class FaceDetection(object):
 
     # Assuming video snippets won't contain more than a few face ROI(s)
     def __get_uniq_faces_curr_frame(self, frame_id, faces_roi_hists_prev, faces_roi_hists):
+        faces_prev = len(faces_roi_hists_prev)
+        faces_curr = len(faces_roi_hists)
         logger.info("[{0}] Face Similarity: Prev: {1}, Curr: {2}".format(frame_id,
-                                                                         len(faces_roi_hists_prev),
-                                                                         len(faces_roi_hists)))
+                                                                         faces_prev,
+                                                                         faces_curr))
         # First Time
-        if len(faces_roi_hists_prev) == 0:
-            return len(faces_roi_hists)
+        if faces_prev == 0:
+            return faces_curr
+
+        # Current frame has more faces than prev frame
+        #if faces_curr > faces_prev:
+        #    return faces_curr - faces_prev
 
         uniq_faces_curr_frame = 0
 
