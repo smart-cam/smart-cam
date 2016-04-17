@@ -80,6 +80,7 @@ def videoWriter(cam_writer_frames_Queue, writer_blurrer_filename_Queue):
         # Writing frames to disk
         #fourcc = cv2.cv.CV_FOURCC(*'XVID')
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc_out = cv2.VideoWriter_fourcc(*'avc1')
         filename_blurs = 'blurrer' + '_' + RPiName + '_' + repr(startTime) + ".avi"
         clipWriter = cv2.VideoWriter(filename_blurs, fourcc, 10, (320, 240))
 
@@ -89,7 +90,7 @@ def videoWriter(cam_writer_frames_Queue, writer_blurrer_filename_Queue):
         writer_blurrer_filename_Queue.put(filename_blurs)
 
         filename = RPiName + '_' + repr(startTime) + ".mp4"
-        clipWriter = cv2.VideoWriter(filename, fourcc, 10, (320, 240))
+        clipWriter = cv2.VideoWriter(filename, fourcc_out, 10, (320, 240))
 
         
         while len(FRAMES) > 0:
@@ -186,21 +187,27 @@ def motionDetecter(blur_to_motiondetector_blurred_Queue, file_Queue):
 
         meanCenters = getMeanCenters(lastMeanCenter, CENTERS)
         lastMeanCenter = meanCenters[-1]
+        motionList = getMotionFromCenters(meanCenters)
 
         # Writing output to file
         # remove the 'blurrer_' from the filename
         with open(filename[8:-4]+'.motion', 'w') as f:
             f.write(str(motionFlag) + '\n')
             f.write(str(FOREGROUND))
-            f.write(str(getMotionFromCenters(meanCenters)) + '\n')
+            f.write(str(motionList) + '\n')
             f.close()
 
         # Deleteing temporary used by Blurrer
         os.remove(filename)
         print "Processed MOG and Center of Mass", time.time() - t1
 
-        if motionFlag > 0:
+        # upload video and metadata to AWS if motion detected
+        if motionFlag > 0 and max(motionList) > 5:
             file_Queue.put((filename, FOREGROUND))
+        # delete the video and motion files otherwise
+        else:
+            os.remove(filename[8:-4]+'.mp4')
+            os.remove(filename[8:-4]+'.motion')
                 
     return
 
@@ -218,6 +225,9 @@ def uploader(file_Queue, db):
         # convert float array to strings as needed for Dynamo
         fg_data = {'data': [str(item) for item in foreground]}
         db.create_item(RPiName, BUCKET_NAME, 'videos/'+filename[8:], timestamp, fg_data)
+        # delete the files once we've uploaded them
+        os.remove(filename[8:])
+        os.remove(filename[8:-3]+"motion")
 
     return
 
