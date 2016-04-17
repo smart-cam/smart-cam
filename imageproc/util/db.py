@@ -171,6 +171,14 @@ class DynamoDBUtils(object):
             row.delete()
             logger.info('Deleted Row: {0}'.format(cnt))
 
+    def reset_processed(self):
+        cnt = 0
+        for row in self.sc.scan():
+            cnt += 1
+            row['PROCESSED'] = 0
+            self.update(row)
+            logger.info('Update Row: {0}'.format(cnt))
+
     def get_unprocessed_items(self):
         return self.sc.query_2(index='PROCESSED-index',PROCESSED__eq=0)
 
