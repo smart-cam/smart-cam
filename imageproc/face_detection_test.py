@@ -1,4 +1,5 @@
 __author__ = 'ssatpati'
+from face_detection_v1 import FaceDetectionV1
 from face_detection import FaceDetection
 from util.db import DynamoDBUtils
 from util import misc
@@ -23,8 +24,10 @@ if __name__ == '__main__':
     '''
 
     #local_file = '../videos/video_100_frames_2.mp4'
-    local_file = '../videos/video_100_frames_2.mp4'
+    local_file = '../videos/video_100_frames_1.mp4'
 
-    fd = FaceDetection()
-    report = fd.process(local_file, show_frame=True)
+    fd = FaceDetectionV1()
+    #fd = FaceDetection()
+
+    report = fd.process(local_file, show_frame=False)
     pprint.pprint(report)

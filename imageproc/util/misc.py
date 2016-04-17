@@ -124,4 +124,4 @@ if __name__ == '__main__':
                            '/Users/ssatpati/0-DATASCIENCE/DEV/github/smart-cam/resources/video.avi')
     '''
 
-    delete_keys(BUCKET_NAME, 'FrontDoor_')
+    delete_keys(BUCKET_NAME, 'Entrance_')

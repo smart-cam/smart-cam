@@ -164,6 +164,13 @@ class DynamoDBUtils(object):
             row.delete()
             logger.info('Deleted Row: {0}'.format(cnt))
 
+    def delete_by_id(self,id):
+        cnt = 0
+        for row in self.get_items_by_id(id):
+            cnt += 1
+            row.delete()
+            logger.info('Deleted Row: {0}'.format(cnt))
+
     def get_unprocessed_items(self):
         return self.sc.query_2(index='PROCESSED-index',PROCESSED__eq=0)
 
