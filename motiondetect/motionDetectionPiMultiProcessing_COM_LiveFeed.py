@@ -14,6 +14,7 @@ import math
 from scipy import ndimage
 import numpy as np
 from scipy.spatial import distance
+from flask import Flask, Response
 
 RPiName = 'FrontDoor'
 FRAMES_PER_CLIP = 100    # This is FPS times VIDEO_LENGTH
@@ -46,7 +47,7 @@ def writeToFrame(frameTimestamp, frame, RPiName):
     cv2.putText(frame, frameTimestamp, (30,70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 0, 1, 8)
     return frame
 
-def cameraReader(cam_writer_frames_Queue):
+def cameraReader(cam_writer_frames_Queue, cam_liveWeb_frame_Queue):
     
     camera = picamera.PiCamera()
     camera.resolution = (320, 240)
@@ -62,6 +63,8 @@ def cameraReader(cam_writer_frames_Queue):
             frameTimestamp = time.asctime() + ' ' + time.tzname[0]
             camera.capture(stream, format='bgr', use_video_port=True)
             frame = stream.array
+            if cam_liveWeb_frame_Queue.full() == False:
+                cam_liveWeb_frame_Queue.put(frame, block=False)
             FRAMES.append((frameTimestamp, frame))
             stream.truncate(0)
         print "Camera Capture", time.time() - t1
@@ -228,9 +231,34 @@ def uploader(file_Queue, db):
         # delete the files once we've uploaded them
         os.remove(filename[8:])
         os.remove(filename[8:-3]+"motion")
-
     return
 
+def writeToLiveFrame(frame, RPiName):
+    # Writing SmartCam
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    caption = 'SmartCam: ' +  RPiName + ' (LIVE Feed)'
+    frameTimestamp = time.asctime() + ' ' + time.tzname[0]
+    cv2.putText(frame, 'MIDS Capstone Project', (30,30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 0, 1, 8)
+    cv2.putText(frame, caption, (30,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 0, 1, 8)
+    cv2.putText(frame, frameTimestamp, (30,70), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 0, 1, 8)
+    return frame
+
+def liveVideoServer(cam_liveWeb_frame_Queue):
+    app = Flask(__name__)
+
+    def gen():
+        while True:
+            frame = cam_liveWeb_frame_Queue.get()
+            frame = writeToLiveFrame(frame, RPiName)
+            image = cv2.imencode('.jpg', frame)[1].tostring()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + image + b'\r\n')
+
+    @app.route("/liveVideoFeed")
+    def liveFeed():
+        return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+    app.run(host='0.0.0.0')
 
 if __name__ == "__main__":    
     cam_writer_frames_Queue = multiprocessing.Queue()
@@ -238,15 +266,18 @@ if __name__ == "__main__":
     blur_to_motiondetector_blurred_Queue = multiprocessing.Queue()
     file_Queue = multiprocessing.Queue()
     db = DynamoDBUtils()
+    cam_liveWeb_frame_Queue = multiprocessing.Queue(maxsize=1)
 
-    camReader1_t = multiprocessing.Process(target=cameraReader, args=(cam_writer_frames_Queue,))
+    camReader1_t = multiprocessing.Process(target=cameraReader, args=(cam_writer_frames_Queue, cam_liveWeb_frame_Queue,))
     videoWriter_t = multiprocessing.Process(target=videoWriter, args=(cam_writer_frames_Queue,writer_blurrer_filename_Queue,))
     frameBlurrer_t = multiprocessing.Process(target=frameBlurrer, args=(writer_blurrer_filename_Queue, blur_to_motiondetector_blurred_Queue))
     motionDetector_t = multiprocessing.Process(target=motionDetecter, args=(blur_to_motiondetector_blurred_Queue, file_Queue))
     uploader_t = multiprocessing.Process(target=uploader, args=(file_Queue, db))
+    liveFeed_t = multiprocessing.Process(target=liveVideoServer, args=(cam_liveWeb_frame_Queue,))
 
     camReader1_t.start()
     videoWriter_t.start()
     frameBlurrer_t.start()
     motionDetector_t.start()
     uploader_t.start()
+    liveFeed_t.start()
