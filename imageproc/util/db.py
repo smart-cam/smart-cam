@@ -75,6 +75,7 @@ class DynamoDBUtils(object):
         data['S3_BUCKET'] = DynamoDBUtils.S3_BUCKET
         data['S3_KEY'] = 'videos/video_{0}.avi'.format(num)
         data['PROCESSED'] = 0
+        data['CLASSIFIED'] = 0
         data['VERSION'] = 0
 
         logger.info("# Uploading Data for {0}: {1}".format(rasp_name, num))
@@ -141,6 +142,7 @@ class DynamoDBUtils(object):
         data['S3_BUCKET'] = s3_bucket
         data['S3_KEY'] = s3_key
         data['PROCESSED'] = 0
+        data['CLASSIFIED'] = 0
         data['VERSION'] = 0
         data['LEN'] = randint(5, 60)
 

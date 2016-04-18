@@ -97,6 +97,7 @@ class DynamoDBUtils(object):
         data['S3_BUCKET'] = s3_bucket
         data['S3_KEY'] = s3_key
         data['PROCESSED'] = 0
+        data['CLASSIFIED'] = 0
         data['VERSION'] = 0
         data['LEN'] = 10
         data['FOREGROUND'] = fg
