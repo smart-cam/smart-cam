@@ -70,7 +70,9 @@ def process_item(row):
             output_file = local_dir + '/tf.class.out'
 
             # Run Image Classification
-            for f in glob.glob(local_dir + '/*'):
+            #for f in glob.glob(local_dir + '/*'):
+            for x in xrange(0, 100, 5):
+                f = '{0}/frame_{1}.png'.format(local_dir, x)
                 logger.info('[{0}] Image Classification: {1}'.format(local_file_basename, f))
                 frame_id = os.path.basename(f).split(".")[0].split("_")[1]
                 rc = subprocess.call(['./util/tf_classify.sh',f,output_file])

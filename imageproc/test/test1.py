@@ -54,3 +54,8 @@ print {'data': [str(item) for item in foreground]}
 x = "/home/ubuntu/videos1/Entrance_1460911654.294488.mp4.D/frame_0.png"
 
 print os.path.basename(x).split(".")[0].split("_")[1]
+
+d = []
+for x in xrange(0,100,5):
+    d.append(x)
+print len(d),d
