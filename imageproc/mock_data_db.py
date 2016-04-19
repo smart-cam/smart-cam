@@ -12,4 +12,6 @@ db = DynamoDBUtils()
 
 #db.delete_by_id('Entrance')
 
-db.add_classified()
+#db.add_classified()
+
+db.reset_processed()

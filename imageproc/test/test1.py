@@ -36,11 +36,15 @@ def get_range(l, increment=20):
             end = l
         yield (beg, end)
 
+print "----"
 for beg, end in get_range(len(faces)):
    print sum([i[1] for i in faces[beg:end]]), sum([i[2] for i in faces[beg:end]])
+print "----"
 
-for i in xrange(1,7):
-    print i
+print "----"
+for beg, end in get_range(len(faces)):
+   print max([i[1] for i in faces[beg:end]]), max([i[2] for i in faces[beg:end]])
+print "----"
 
 foreground = [1,2,3,4,5]
 
