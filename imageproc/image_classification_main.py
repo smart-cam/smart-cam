@@ -18,15 +18,18 @@ logger = log.getLogger(__name__)
 #Path to Default Video File
 VIDEO_FILE = '../resources/video.avi'
 
-PARALLEL_PROCS = 1
+PARALLEL_PROCS = 5
 OUTPUT_DIR = os.path.expanduser('~') + '/videos1'
 
 # Create all Classes
 db = DynamoDBUtils()
 
 
-def update_record(row, report):
+def update_record(row, d):
     # Metadata
+
+    row['CLASSIFICATION'] = d
+    row['CLASSIFIED'] = 1
 
     # Update
     db.update(row)
@@ -34,7 +37,6 @@ def update_record(row, report):
 
 def process_item(row):
     d = {}
-    '''Face Counting needs to be integrated here'''
     try:
         logger.info('Processing: <{0}> <{1}> <{2}> <{3}> <{4}>'.format(row['RASP_NAME'],
                                                                  row['START_TIME'],
@@ -80,17 +82,16 @@ def process_item(row):
                         break # Just first line
                     d[str(frame_id)] = classification
 
-            print d
-
+            pprint.pprint(d)
 
             # Update Fields in DB
-            #update_record(row, report)
+            #update_record(row, d)
 
             #Delete the file/folder
             #os.remove(local_file)
             #shutil.rmtree(local_dir)
-            print '### Sleeping for 100 secs ###'
-            time.sleep(100)
+            #print '### Sleeping for 100 secs ###'
+            #time.sleep(100)
         else:
             logger.info('[{0}][{1}] FAILED Downloading File: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY']))
     except Exception as e:
