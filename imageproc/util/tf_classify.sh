@@ -1,10 +1,10 @@
 #!/bin/bash
 
 image_file=$1
-out_dir=$2
+out_file=$2
 
 echo "Classifying Image File: ${image_file}"
-echo "Output Directory: ${out_dir}"
+echo "Output File: ${out_file}"
 
 # Change Directory
 #cd ~/tensorflow
@@ -18,4 +18,4 @@ echo "Output Directory: ${out_dir}"
 
 # Create Output File
 cat /Users/ssatpati/0-DATASCIENCE/DEV/github/smart-cam/resources/tf.out | \
-        grep ^I | awk -F'[\]]' '{print $2}' | awk '{$1=$1};1' > $out_dir/tf.class.out
+        grep ^I | awk -F'[\]]' '{print $2}' | awk '{$1=$1};1' > $out_file
