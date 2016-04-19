@@ -40,7 +40,8 @@ def process_item(row):
         # Download File from S3
         ret_status, local_file = misc.download_from_s3(row['S3_BUCKET'], row['S3_KEY'], OUTPUT_DIR)
         if ret_status:
-            logger.info('[{0}][{1}] Video File: {2}'.format(row['RASP_NAME'],row['START_TIME'],local_file))
+            local_file_basename = os.path.basename(local_file)
+            logger.info('[{0}]'.format(local_file_basename))
 
             local_dir = local_file + ".D"
 
@@ -55,7 +56,10 @@ def process_item(row):
                 if not ret:
                     break
                 if cnt % 5 == 0:
-                    cv2.imwrite('{0}/frame_{1}.png'.format(local_dir, cnt),frame)
+                    image_file = '{0}/frame_{1}.png'.format(local_dir, cnt)
+                    cv2.imwrite(image_file,frame)
+                    logger.info('[{0}] Image File Written: {1}'.format(local_file_basename, image_file))
+                cnt +=1
 
             # Run Image Classification
             report = None
