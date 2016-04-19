@@ -10,6 +10,7 @@ import glob
 import time
 import shutil
 import os
+import sys
 
 logger = log.getLogger(__name__)
 
@@ -68,6 +69,7 @@ def process_item(row):
 
             # Run Image Classification
             for f in glob.glob(local_dir + '/*'):
+                logger.info('[{0}] Image Classification: {1}'.format(local_file_basename, f))
                 frame_id = os.path.basename(f).split(".")[0].split("_")[1]
                 rc = subprocess.call(['./tf_classify.sh',f,output_file])
                 with open(output_file, 'r') as f:
@@ -96,6 +98,7 @@ def process_item(row):
         logger.info('[{0}][{1}] FAILED Classifying Video: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY']))
         #Delete the file
         os.remove(local_file)
+        sys.exit(1)
 
 
 if __name__ == '__main__':
