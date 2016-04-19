@@ -3,6 +3,7 @@ from util import misc
 from util import log
 
 import multiprocessing
+import cv2
 import pprint
 import time
 import shutil
@@ -23,22 +24,6 @@ db = DynamoDBUtils()
 
 def update_record(row, report):
     # Metadata
-    row['UPDATE_TIME'] = time.time()
-    row['VERSION'] += 1
-    row['PROCESSED'] = 1
-
-    # Face Counts / Summary
-    row['FRAME_COUNT'] = report['frame_count']
-    row['FACE_COUNT'] = report['face_count']
-    row['FACE_COUNT_UNIQ'] = report['face_count_uniq']
-
-    # Face Counts / Detail
-    d = {}
-    d['data'] = report['face_count_dtl']
-    row['FACE_COUNT_DTL'] = d
-    d= {}
-    d['data'] = report['face_count_uniq_dtl']
-    row['FACE_COUN_UNIQ_DTL'] = d
 
     # Update
     db.update(row)
@@ -56,21 +41,37 @@ def process_item(row):
         ret_status, local_file = misc.download_from_s3(row['S3_BUCKET'], row['S3_KEY'], OUTPUT_DIR)
         if ret_status:
             logger.info('[{0}][{1}] Video File: {2}'.format(row['RASP_NAME'],row['START_TIME'],local_file))
-            #time.sleep(10)
+
+            local_dir = local_file + ".D"
+
+            # Create a dir
+            os.makedirs(local_dir)
+
+            # Dump the frames
+            cap = cv2.VideoCapture(local_file)
+            cnt = 0
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                if cnt % 5 == 0:
+                    cv2.imwrite('{0}/frame_{1}.png'.format(local_dir, cnt),frame)
 
             # Run Image Classification
             report = None
 
             # Update Fields in DB
-            update_record(row, report)
+            #update_record(row, report)
 
-            #Delete the file
-            os.remove(local_file)
+            #Delete the file/folder
+            #os.remove(local_file)
+            #shutil.rmtree(local_dir)
+            time.sleep(100)
         else:
             logger.info('[{0}][{1}] FAILED Downloading File: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY']))
     except Exception as e:
         logger.error(e)
-        logger.info('[{0}][{1}] FAILED Processing Video: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY']))
+        logger.info('[{0}][{1}] FAILED Classifying Video: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY']))
         #Delete the file
         os.remove(local_file)
 
@@ -94,7 +95,7 @@ if __name__ == '__main__':
 
     while True:
         db.display_items()
-        rows = db.get_unprocessed_items()
+        rows = db.get_unclassified_items()
 
         # Process Items
         if rows != None:

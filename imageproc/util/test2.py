@@ -2,12 +2,9 @@ __author__ = 'ssatpati'
 
 import time
 import sys
+import subprocess
+import os
 
-print sys.argv
+OUTPUT_DIR = os.path.expanduser('~') + '/videos1'
 
-cnt = 50
-
-while cnt > 0:
-    print cnt, sys.argv
-    cnt -= 1
-    time.sleep(1)
+rc = subprocess.call(['./tf_classify.sh','frame_1.png',OUTPUT_DIR])

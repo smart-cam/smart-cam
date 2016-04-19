@@ -181,8 +181,19 @@ class DynamoDBUtils(object):
             self.update(row)
             logger.info('Update Row: {0}'.format(cnt))
 
+    def add_classified(self):
+        cnt = 0
+        for row in self.sc.scan():
+            cnt += 1
+            row['CLASSIFIED'] = 0
+            self.update(row)
+            logger.info('Update Row: {0}'.format(cnt))
+
     def get_unprocessed_items(self):
         return self.sc.query_2(index='PROCESSED-index',PROCESSED__eq=0)
+
+    def get_unclassified_items(self):
+        return self.sc.query_2(index='CLASSIFIED-index',CLASSIFIED__eq=0)
 
     def get_items_by_id(self, id):
         return self.sc.query_2(RASP_NAME__eq=id)
