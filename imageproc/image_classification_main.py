@@ -71,7 +71,7 @@ def process_item(row):
             for f in glob.glob(local_dir + '/*'):
                 logger.info('[{0}] Image Classification: {1}'.format(local_file_basename, f))
                 frame_id = os.path.basename(f).split(".")[0].split("_")[1]
-                rc = subprocess.call(['./tf_classify.sh',f,output_file])
+                rc = subprocess.call(['./util/tf_classify.sh',f,output_file])
                 with open(output_file, 'r') as f:
                     classification = {}
                     for l in f.readlines():
