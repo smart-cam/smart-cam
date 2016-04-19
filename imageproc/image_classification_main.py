@@ -3,8 +3,10 @@ from util import misc
 from util import log
 
 import multiprocessing
+import subprocess
 import cv2
 import pprint
+import glob
 import time
 import shutil
 import os
@@ -30,6 +32,7 @@ def update_record(row, report):
 
 
 def process_item(row):
+    d = {}
     '''Face Counting needs to be integrated here'''
     try:
         logger.info('Processing: <{0}> <{1}> <{2}> <{3}> <{4}>'.format(row['RASP_NAME'],
@@ -61,8 +64,22 @@ def process_item(row):
                     logger.info('[{0}] Image File Written: {1}'.format(local_file_basename, image_file))
                 cnt +=1
 
+            output_file = local_dir + '/tf.class.out'
+
             # Run Image Classification
-            report = None
+            for f in glob.glob(local_dir + '/*'):
+                frame_id = os.path.basename(f).split(".")[0].split("_")[1]
+                rc = subprocess.call(['./tf_classify.sh',f,output_file])
+                with open(output_file, 'r') as f:
+                    classification = {}
+                    for l in f.readlines():
+                        t = l.split(":")
+                        classification[t[0].strip()] = t[1].strip()
+                        break # Just first line
+                    d[str(frame_id)] = classification
+
+            print d
+
 
             # Update Fields in DB
             #update_record(row, report)
@@ -70,6 +87,7 @@ def process_item(row):
             #Delete the file/folder
             #os.remove(local_file)
             #shutil.rmtree(local_dir)
+            print '### Sleeping for 100 secs ###'
             time.sleep(100)
         else:
             logger.info('[{0}][{1}] FAILED Downloading File: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY']))

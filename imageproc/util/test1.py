@@ -1,5 +1,6 @@
 __author__ = 'ssatpati'
 import random
+import os
 
 
 def stats(lst):
@@ -45,3 +46,7 @@ foreground = [1,2,3,4,5]
 
 print [str(item) for item in foreground]
 print {'data': [str(item) for item in foreground]}
+
+x = "/home/ubuntu/videos1/Entrance_1460911654.294488.mp4.D/frame_0.png"
+
+print os.path.basename(x).split(".")[0].split("_")[1]
