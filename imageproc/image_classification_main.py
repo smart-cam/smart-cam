@@ -36,7 +36,7 @@ def update_record(row, d):
 
 
 def process_item(row):
-    d = {}
+    d = []
     try:
         logger.info('Processing: <{0}> <{1}> <{2}> <{3}> <{4}>'.format(row['RASP_NAME'],
                                                                  row['START_TIME'],
@@ -75,12 +75,14 @@ def process_item(row):
                 frame_id = os.path.basename(f).split(".")[0].split("_")[1]
                 rc = subprocess.call(['./util/tf_classify.sh',f,output_file])
                 with open(output_file, 'r') as f:
-                    classification = {}
                     for l in f.readlines():
                         t = l.split(":")
-                        classification[t[0].strip()] = t[1].strip()
-                        break # Just first line
-                    d[str(frame_id)] = classification
+                        cat = t[0].strip().split()[0]
+                        prob = t[1].strip()
+                        # Append as example: person(0.825)
+                        d.append("{0}({1})".format(cat,prob))
+                        break # Just first line (Dominant Cat)
+                pprint.pprint(d)
 
             pprint.pprint(d)
 
