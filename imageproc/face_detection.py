@@ -115,8 +115,8 @@ class FaceDetection(object):
         face_count_uniq_dtl = []
 
         for beg, end in self.__get_range(len(faces)):
-            face_count_dtl.append(str(sum([i[1] for i in faces[beg:end]])))
-            face_count_uniq_dtl.append(str(sum([i[2] for i in faces[beg:end]])))
+            face_count_dtl.append(str(max([i[1] for i in faces[beg:end]])))
+            face_count_uniq_dtl.append(str(max([i[2] for i in faces[beg:end]])))
 
         report['face_count_dtl'] = face_count_dtl
         report['face_count_uniq_dtl'] = face_count_uniq_dtl
