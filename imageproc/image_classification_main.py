@@ -12,6 +12,7 @@ import shutil
 import os
 import sys
 
+
 logger = log.getLogger(__name__)
 
 
@@ -25,10 +26,10 @@ OUTPUT_DIR = os.path.expanduser('~') + '/videos1'
 db = DynamoDBUtils()
 
 
-def update_record(row, d):
+def update_record(row, nn_categories):
     # Metadata
 
-    row['CLASSIFICATION'] = d
+    row['CLASSIFICATION'] = nn_categories
     row['CLASSIFIED'] = 1
 
     # Update
@@ -36,7 +37,6 @@ def update_record(row, d):
 
 
 def process_item(row):
-    d = []
     try:
         logger.info('Processing: <{0}> <{1}> <{2}> <{3}> <{4}>'.format(row['RASP_NAME'],
                                                                  row['START_TIME'],
@@ -71,6 +71,7 @@ def process_item(row):
 
             # Run Image Classification
             #for f in glob.glob(local_dir + '/*'):
+            s = set()
             for x in xrange(0, 100, 5):
                 f = '{0}/frame_{1}.png'.format(local_dir, x)
                 logger.info('[{0}] Image Classification: {1}'.format(local_file_basename, f))
@@ -82,18 +83,19 @@ def process_item(row):
                         cat = t[0].strip().split()[0]
                         prob = t[1].strip()
                         # Append as example: person(0.825)
-                        d.append("{0}({1})".format(cat,prob))
-                        break # Just first line (Dominant Cat)
-                pprint.pprint(d)
+                        s.add(cat)
+                        break  # Just first line (Dominant Cat)
+                print s
 
-            pprint.pprint(d)
+            nn_categories = ",".join(s)
+            logger.info('[{0}] NN Dominant CATs: {1}'.format(local_file_basename, nn_categories))
 
             # Update Fields in DB
-            update_record(row, d)
+            #update_record(row, nn_categories)
 
             #Delete the file/folder
-            os.remove(local_file)
-            shutil.rmtree(local_dir)
+            #os.remove(local_file)
+            #shutil.rmtree(local_dir)
             print '### Sleeping for 100 secs ###'
             time.sleep(100)
         else:
