@@ -14,4 +14,4 @@ db = DynamoDBUtils()
 
 #db.add_classified()
 
-db.reset_processed()
+db.reset_classified()

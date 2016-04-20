@@ -17,3 +17,4 @@ with open(OUTPUT_FILE, 'r') as f:
         d[t[0].strip()] = t[1].strip()
 
 print d
+

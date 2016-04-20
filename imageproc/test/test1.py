@@ -59,3 +59,9 @@ d = []
 for x in xrange(0,100,5):
     d.append(x)
 print len(d),d
+
+s = set()
+s.add('person')
+s.add('person')
+s.add('dog')
+print ",".join(s)

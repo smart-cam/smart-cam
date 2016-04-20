@@ -19,7 +19,7 @@ logger = log.getLogger(__name__)
 #Path to Default Video File
 VIDEO_FILE = '../resources/video.avi'
 
-PARALLEL_PROCS = 1
+PARALLEL_PROCS = 10
 OUTPUT_DIR = os.path.expanduser('~') + '/videos1'
 
 # Create all Classes
@@ -91,13 +91,13 @@ def process_item(row):
             logger.info('[{0}] NN Dominant CATs: {1}'.format(local_file_basename, nn_categories))
 
             # Update Fields in DB
-            #update_record(row, nn_categories)
+            update_record(row, nn_categories)
 
             #Delete the file/folder
-            #os.remove(local_file)
-            #shutil.rmtree(local_dir)
-            print '### Sleeping for 100 secs ###'
-            time.sleep(100)
+            os.remove(local_file)
+            shutil.rmtree(local_dir)
+            #print '### Sleeping for 100 secs ###'
+            #time.sleep(100)
         else:
             logger.info('[{0}][{1}] FAILED Downloading File: {2}/{3}'.format(row['RASP_NAME'],row['START_TIME'],row['S3_BUCKET'],row['S3_KEY']))
     except Exception as e:

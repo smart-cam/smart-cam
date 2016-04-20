@@ -181,6 +181,14 @@ class DynamoDBUtils(object):
             self.update(row)
             logger.info('Update Row: {0}'.format(cnt))
 
+    def reset_classified(self):
+        cnt = 0
+        for row in self.sc.scan():
+            cnt += 1
+            row['CLASSIFIED'] = 0
+            self.update(row)
+            logger.info('Update Row: {0}'.format(cnt))
+
     def add_classified(self):
         cnt = 0
         for row in self.sc.scan():
