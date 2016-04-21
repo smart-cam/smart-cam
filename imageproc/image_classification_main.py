@@ -19,7 +19,7 @@ logger = log.getLogger(__name__)
 #Path to Default Video File
 VIDEO_FILE = '../resources/video.avi'
 
-PARALLEL_PROCS = 10
+PARALLEL_PROCS = 5
 OUTPUT_DIR = os.path.expanduser('~') + '/videos1'
 
 # Create all Classes

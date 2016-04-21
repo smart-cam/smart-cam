@@ -200,8 +200,14 @@ class DynamoDBUtils(object):
     def get_unprocessed_items(self):
         return self.sc.query_2(index='PROCESSED-index',PROCESSED__eq=0)
 
+    def get_processed_items(self):
+        return self.sc.query_2(index='PROCESSED-index',PROCESSED__eq=1)
+
     def get_unclassified_items(self):
         return self.sc.query_2(index='CLASSIFIED-index',CLASSIFIED__eq=0)
+
+    def get_classified_items(self):
+        return self.sc.query_2(index='CLASSIFIED-index',CLASSIFIED__eq=1)
 
     def get_items_by_id(self, id):
         return self.sc.query_2(RASP_NAME__eq=id)
